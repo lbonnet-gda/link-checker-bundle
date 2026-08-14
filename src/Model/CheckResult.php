@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Model;
 
+use Symfony\Component\HttpFoundation\Response;
+
 final class CheckResult
 {
     public function __construct(
@@ -18,7 +20,9 @@ final class CheckResult
 
     public function isSuccessful(): bool
     {
-        return $this->statusCode !== null && $this->statusCode >= 200 && $this->statusCode < 400;
+        return $this->statusCode !== null
+            && $this->statusCode >= Response::HTTP_OK
+            && $this->statusCode < Response::HTTP_BAD_REQUEST;
     }
 
     public function isBroken(): bool
