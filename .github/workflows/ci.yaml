@@ -51,3 +51,14 @@ jobs:
 
             -   name: Run PHPUnit tests
                 run: ./vendor/bin/phpunit
+
+    ci-status:
+        name: CI Status
+        needs: phpunit
+        runs-on: ubuntu-latest
+        if: always()
+        steps:
+            -   run: |
+                    if [ "${{ needs.phpunit.result }}" != "success" ]; then
+                      exit 1
+                    fi
