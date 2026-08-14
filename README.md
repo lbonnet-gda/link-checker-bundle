@@ -52,8 +52,8 @@ php bin/console link-checker:check
 
 - [x] Bundle skeleton and configuration
 - [x] Link extraction from HTML
-- [ ] URL status checking (HttpClient)
-- [ ] Crawler orchestration
+- [x] URL status checking (HttpClient)
+- [x] Crawler orchestration
 - [ ] Console command
 - [ ] Result persistence and notifications
 - [ ] Tests & CI matrix

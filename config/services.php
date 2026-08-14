@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
+use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 
@@ -21,4 +22,9 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set(UrlChecker::class)
         ->arg('$defaultTimeout', param('link_checker.timeout'));
+
+    $services->set(SiteCrawler::class)
+        ->arg('$defaultMaxDepth', param('link_checker.max_depth'))
+        ->arg('$defaultCheckExternal', param('link_checker.check_external'))
+        ->arg('$defaultExcludePatterns', param('link_checker.exclude_patterns'));
 };
