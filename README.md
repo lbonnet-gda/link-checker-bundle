@@ -189,16 +189,6 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
 
 To disable automatic file storage, set `storage_dir: null` in your bundle configuration.
 
-## Roadmap
-
-- [x] Bundle skeleton and configuration
-- [x] Link extraction from HTML
-- [x] URL status checking (HttpClient)
-- [x] Crawler orchestration
-- [x] Console command
-- [x] Result persistence and notifications
-- [x] Tests & CI matrix
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
