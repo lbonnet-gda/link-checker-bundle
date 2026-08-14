@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Lbonnet\LinkCheckerBundle\Crawler;
 
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
+use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
@@ -18,6 +20,7 @@ final class SiteCrawler implements CrawlerInterface
         private readonly LinkExtractorInterface $extractor,
         private readonly UrlCheckerInterface $urlChecker,
         private readonly HttpClientInterface $httpClient,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly int $defaultMaxDepth = 3,
         private readonly bool $defaultCheckExternal = true,
         /** @var list<string> */
@@ -47,8 +50,7 @@ final class SiteCrawler implements CrawlerInterface
                 'link' => new ExtractedLink(
                     url: $startUrl,
                     sourceUrl: $startUrl,
-                    anchorText: 'Root',
-                    isExternal: false
+                    anchorText: 'Root'
                 ),
                 'depth' => 0,
             ],
@@ -118,11 +120,15 @@ final class SiteCrawler implements CrawlerInterface
 
         $totalDuration = microtime(true) - $startTime;
 
-        return new CrawlReport(
+        $report = new CrawlReport(
             startUrl: $startUrl,
             brokenLinks: $brokenLinks,
             totalChecked: $totalChecked,
             totalDuration: round($totalDuration, 3)
         );
+
+        $this->eventDispatcher?->dispatch(new CrawlCompletedEvent($report));
+
+        return $report;
     }
 }

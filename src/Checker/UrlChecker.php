@@ -65,7 +65,6 @@ final class UrlChecker implements UrlCheckerInterface
 
             return new CheckResult(
                 url: $url,
-                statusCode: null,
                 duration: round($duration, 3),
                 errorMessage: $e->getMessage()
             );
@@ -74,7 +73,6 @@ final class UrlChecker implements UrlCheckerInterface
 
             return new CheckResult(
                 url: $url,
-                statusCode: null,
                 duration: round($duration, 3),
                 errorMessage: 'Unexpected error: '.$e->getMessage()
             );

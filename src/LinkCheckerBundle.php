@@ -38,6 +38,10 @@ final class LinkCheckerBundle extends AbstractBundle
                     ->scalarPrototype()->end()
                     ->info('Regular expression patterns for URLs to skip.')
                 ->end()
+                ->scalarNode('storage_dir')
+                    ->defaultValue('%kernel.project_dir%/var/link_checker')
+                    ->info('Directory where crawl reports in JSON will be stored. Set to empty or null to disable.')
+                ->end()
             ->end()
         ;
         // @formatter:on
@@ -52,6 +56,7 @@ final class LinkCheckerBundle extends AbstractBundle
             ->set('link_checker.max_depth', $config['max_depth'])
             ->set('link_checker.timeout', $config['timeout'])
             ->set('link_checker.check_external', $config['check_external'])
-            ->set('link_checker.exclude_patterns', $config['exclude_patterns']);
+            ->set('link_checker.exclude_patterns', $config['exclude_patterns'])
+            ->set('link_checker.storage_dir', $config['storage_dir']);
     }
 }
