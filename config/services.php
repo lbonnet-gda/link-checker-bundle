@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
+use Lbonnet\LinkCheckerBundle\Command\CheckLinksCommand;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
@@ -27,4 +28,7 @@ return static function (ContainerConfigurator $container): void {
         ->arg('$defaultMaxDepth', param('link_checker.max_depth'))
         ->arg('$defaultCheckExternal', param('link_checker.check_external'))
         ->arg('$defaultExcludePatterns', param('link_checker.exclude_patterns'));
+
+    $services->set(CheckLinksCommand::class)
+        ->arg('$defaultBaseUrl', param('link_checker.base_url'));
 };

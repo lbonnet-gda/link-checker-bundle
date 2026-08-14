@@ -54,7 +54,7 @@ php bin/console link-checker:check
 - [x] Link extraction from HTML
 - [x] URL status checking (HttpClient)
 - [x] Crawler orchestration
-- [ ] Console command
+- [x] Console command
 - [ ] Result persistence and notifications
 - [ ] Tests & CI matrix
 
