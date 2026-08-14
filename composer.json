@@ -1,0 +1,49 @@
+{
+    "name": "lbonnet/link-checker-bundle",
+    "type": "symfony-bundle",
+    "description": "A Symfony bundle to crawl a site and detect broken internal and external links.",
+    "keywords": [
+        "symfony",
+        "bundle",
+        "seo",
+        "links",
+        "broken-links",
+        "crawler",
+        "audit"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "lbonnet",
+            "homepage": "https://github.com/lbonnet-gda"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "symfony/config": "^6.4 || ^7.4 || ^8.1",
+        "symfony/dependency-injection": "^6.4 || ^7.4 || ^8.1",
+        "symfony/http-client": "^6.4 || ^7.4 || ^8.1",
+        "symfony/http-kernel": "^6.4 || ^7.4 || ^8.1"
+    },
+    "require-dev": {
+        "symfony/console": "^6.4 || ^7.4 || ^8.1",
+        "symfony/framework-bundle": "^6.4 || ^7.4 || ^8.1",
+        "symfony/phpunit-bridge": "^6.4 || ^7.4 || ^8.1",
+        "phpunit/phpunit": "^10.5 || ^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lbonnet\\LinkCheckerBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lbonnet\\LinkCheckerBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
