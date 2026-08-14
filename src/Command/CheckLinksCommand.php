@@ -7,6 +7,7 @@ namespace Lbonnet\LinkCheckerBundle\Command;
 use Lbonnet\LinkCheckerBundle\Crawler\CrawlerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -78,11 +79,33 @@ final class CheckLinksCommand extends Command
 
         $io->title('Link Checker');
         $io->text(sprintf('Starting crawl on: <info>%s</info>', $startUrl));
+        $io->newLine();
 
-        $progressCallback = static function (string $currentUrl, int $totalChecked, bool $isBroken) use ($io): void {
+        $progressBar = null;
+
+        if (!$io->isVerbose()) {
+            ProgressBar::setPlaceholderFormatterDefinition('truncated_url', static function (ProgressBar $bar): string {
+                $message = $bar->getMessage();
+
+                return strlen($message) > 60 ? substr($message, 0, 57).'...' : $message;
+            });
+
+            $progressBar = $io->createProgressBar();
+            $progressBar->setFormat(' %current% URLs checked [%elapsed%] <fg=cyan>%truncated_url%</>');
+            $progressBar->setMessage('Starting...');
+            $progressBar->start();
+        }
+
+        $progressCallback = static function (string $currentUrl, int $totalChecked, bool $isBroken) use (
+            $io,
+            $progressBar
+        ): void {
             if ($io->isVerbose()) {
                 $status = $isBroken ? '<fg=red>[BROKEN]</>' : '<fg=green>[OK]</>';
                 $io->text(sprintf('%s (%d) %s', $status, $totalChecked, $currentUrl));
+            } elseif ($progressBar !== null) {
+                $progressBar->setMessage($currentUrl);
+                $progressBar->advance();
             }
         };
 
@@ -94,7 +117,12 @@ final class CheckLinksCommand extends Command
             progressCallback: $progressCallback,
         );
 
-        $io->newLine();
+        if ($progressBar !== null) {
+            $progressBar->finish();
+            $io->newLine(2);
+        } else {
+            $io->newLine();
+        }
 
         if (!$report->hasBrokenLinks()) {
             $io->success(
