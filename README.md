@@ -197,7 +197,7 @@ To disable automatic file storage, set `storage_dir: null` in your bundle config
 - [x] Crawler orchestration
 - [x] Console command
 - [x] Result persistence and notifications
-- [ ] Tests & CI matrix
+- [x] Tests & CI matrix
 
 ## License
 
