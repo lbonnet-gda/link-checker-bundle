@@ -53,10 +53,9 @@ final class HtmlLinkExtractor implements LinkExtractorInterface
             }
 
             $targetHost = parse_url($cleanUrl, PHP_URL_HOST);
-            $isExternal = ($targetHost !== null && $sourceHost !== null) && (strcasecmp(
-                        $targetHost,
-                        $sourceHost
-                    ) !== 0);
+            $isExternal =
+                ($targetHost !== null && $sourceHost !== null)
+                && (strcasecmp($targetHost, $sourceHost) !== 0);
 
             $seenUrls[$cleanUrl] = true;
             $extractedLinks[] = new ExtractedLink(
@@ -97,6 +96,10 @@ final class HtmlLinkExtractor implements LinkExtractorInterface
         }
 
         $parsedBase = parse_url($baseUrl);
+        if ($parsedBase === false) {
+            return $relativeUrl;
+        }
+
         $scheme = $parsedBase['scheme'] ?? 'https';
         $host = $parsedBase['host'] ?? '';
         $port = isset($parsedBase['port']) ? ':'.$parsedBase['port'] : '';
