@@ -138,28 +138,52 @@ final class CheckLinksCommand extends Command
 
         $io->section(sprintf('Broken Links Found (%d)', $report->getBrokenLinksCount()));
 
-        $tableRows = [];
+        $table = $io->createTable();
+        $table->setHeaders(['Status', 'Type', 'Broken URL', 'Source Page', 'Anchor']);
+
+        $table->setStyle('box');
+
         foreach ($report->brokenLinks as $item) {
             $link = $item['link'];
             $result = $item['result'];
 
-            $statusDisplay = $result->statusCode !== null
-                ? (string)$result->statusCode
-                : 'ERROR: '.($result->errorMessage ?? 'Unknown');
+            if ($result->statusCode !== null) {
+                $status = sprintf('<fg=red>%d</>', $result->statusCode);
+            } else {
+                $error = $result->errorMessage ?? 'Error';
+                if (str_contains($error, 'Idle timeout') || str_contains($error, 'timed out')) {
+                    $error = 'Timeout';
+                } elseif (str_contains($error, 'Could not resolve host')) {
+                    $error = 'DNS Error';
+                } elseif (str_contains($error, 'SSL')) {
+                    $error = 'SSL Error';
+                }
+                $status = sprintf('<fg=red>%s</>', $error);
+            }
 
-            $tableRows[] = [
-                $link->url,
-                $statusDisplay,
-                $link->sourceUrl,
-                $link->anchorText ?: '<fg=gray>(empty)</>',
+            $brokenUrlDisplay = sprintf('<href=%s>%s</>', $link->url, $link->url);
+
+            $sourceHost = parse_url($link->sourceUrl, PHP_URL_HOST);
+            $startHost = parse_url($startUrl, PHP_URL_HOST);
+
+            if ($sourceHost === $startHost) {
+                $sourcePath = parse_url($link->sourceUrl, PHP_URL_PATH) ?? '/';
+                $sourceDisplay = sprintf('<href=%s>%s</>', $link->sourceUrl, $sourcePath);
+            } else {
+                $sourceDisplay = sprintf('<href=%s>%s</>', $link->sourceUrl, $link->sourceUrl);
+            }
+
+            $table->addRow([
+                $status,
                 $link->isExternal ? 'External' : 'Internal',
-            ];
+                $brokenUrlDisplay,
+                $sourceDisplay,
+                $link->anchorText !== '' ? $link->anchorText : '<fg=gray>(empty)</>',
+            ]);
         }
 
-        $io->table(
-            ['Broken URL', 'Status / Error', 'Source Page', 'Anchor Text', 'Type'],
-            $tableRows
-        );
+        $table->render();
+        $io->newLine();
 
         $io->error(
             sprintf(
