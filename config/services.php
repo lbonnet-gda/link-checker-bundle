@@ -10,11 +10,10 @@ return static function (ContainerConfigurator $container): void {
         ->autowire()
         ->autoconfigure();
 
-    // Services will be registered here as they are implemented
-    // (link extractor, URL checker, crawler, console command...).
     $services->load('Lbonnet\\LinkCheckerBundle\\', '../src/')
         ->exclude([
             '../src/LinkCheckerBundle.php',
             '../src/DependencyInjection/',
+            '../src/Model/',
         ]);
 };

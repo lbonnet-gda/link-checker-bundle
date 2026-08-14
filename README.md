@@ -51,7 +51,7 @@ php bin/console link-checker:check
 ## Roadmap
 
 - [x] Bundle skeleton and configuration
-- [ ] Link extraction from HTML
+- [x] Link extraction from HTML
 - [ ] URL status checking (HttpClient)
 - [ ] Crawler orchestration
 - [ ] Console command
