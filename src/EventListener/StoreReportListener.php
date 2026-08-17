@@ -11,7 +11,9 @@ use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Throwable;
 
-#[AsEventListener]
+// High priority: the audit trail must be persisted before any other CrawlCompletedEvent
+// listener (e.g., a user's notification listener) runs and potentially throws.
+#[AsEventListener(priority: 100)]
 final class StoreReportListener
 {
     public function __construct(

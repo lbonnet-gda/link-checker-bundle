@@ -161,6 +161,11 @@ final class LinkCheckerNotificationListener
 }
 ```
 
+> [!NOTE]
+> If a `CrawlCompletedEvent` listener throws (e.g., a misconfigured notifier transport), the bundle catches and logs
+> the error instead of letting it propagate — a broken notification integration won't discard an otherwise
+> successful crawl or prevent the JSON report from being saved.
+
 ### 5. Report Storage
 
 By default, every completed crawl automatically saves a detailed JSON snapshot in `var/link_checker/`:

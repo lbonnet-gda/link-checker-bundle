@@ -12,6 +12,7 @@ use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -80,6 +81,35 @@ final class SiteCrawlerTest extends TestCase
         );
 
         $crawler->crawl($startUrl);
+    }
+
+    public function testCrawlReturnsReportEvenIfEventListenerThrows(): void
+    {
+        $startUrl = 'https://example.com';
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturn([]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturn(
+            new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8')
+        );
+
+        $httpClient = new MockHttpClient(new MockResponse('<html></html>'));
+
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->method('dispatch')->willThrowException(new RuntimeException('Slack transport misconfigured'));
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            eventDispatcher: $dispatcher
+        );
+
+        $report = $crawler->crawl($startUrl);
+
+        $this->assertSame($startUrl, $report->startUrl);
+        $this->assertFalse($report->hasBrokenLinks());
     }
 
     public function testCrawlDeduplicatesHttpAndHttpsVariantsOfSameUrl(): void
