@@ -54,7 +54,7 @@ final class HtmlLinkExtractor implements LinkExtractorInterface
 
             $targetHost = parse_url($cleanUrl, PHP_URL_HOST);
             $isExternal =
-                ($targetHost !== null && $sourceHost !== null)
+                is_string($targetHost) && is_string($sourceHost)
                 && (strcasecmp($targetHost, $sourceHost) !== 0);
 
             $seenUrls[$cleanUrl] = true;
