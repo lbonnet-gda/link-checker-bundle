@@ -10,6 +10,8 @@ use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
@@ -25,6 +27,7 @@ final class SiteCrawler implements CrawlerInterface
         private readonly bool $defaultCheckExternal = true,
         /** @var list<string> */
         private readonly array $defaultExcludePatterns = [],
+        private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -127,7 +130,13 @@ final class SiteCrawler implements CrawlerInterface
             totalDuration: round($totalDuration, 3)
         );
 
-        $this->eventDispatcher?->dispatch(new CrawlCompletedEvent($report));
+        try {
+            $this->eventDispatcher?->dispatch(new CrawlCompletedEvent($report));
+        } catch (Throwable $e) {
+            $this->logger->error(
+                sprintf('[LinkChecker] A "CrawlCompletedEvent" listener failed: %s', $e->getMessage())
+            );
+        }
 
         return $report;
     }
