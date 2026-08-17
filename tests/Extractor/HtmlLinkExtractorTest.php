@@ -46,6 +46,16 @@ final class HtmlLinkExtractorTest extends TestCase
         $this->assertTrue($links[2]->isExternal);
     }
 
+    public function testMalformedTargetUrlIsNotExternalAndDoesNotThrow(): void
+    {
+        $html = '<a href="https://example.com:-1/page">Malformed port</a>';
+
+        $links = $this->extractor->extract($html, 'https://example.com');
+
+        $this->assertCount(1, $links);
+        $this->assertFalse($links[0]->isExternal);
+    }
+
     public function testExcludePatterns(): void
     {
         $html = '<a href="/admin/dashboard">Admin</a><a href="/public/page">Page</a>';
