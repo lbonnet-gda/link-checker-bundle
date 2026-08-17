@@ -81,4 +81,33 @@ final class SiteCrawlerTest extends TestCase
 
         $crawler->crawl($startUrl);
     }
+
+    public function testCrawlDeduplicatesHttpAndHttpsVariantsOfSameUrl(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturn([
+            new ExtractedLink('http://example.com/dup', $startUrl, 'Dup (http)', false),
+            new ExtractedLink('https://example.com/dup', $startUrl, 'Dup (https)', false),
+        ]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->expects($this->exactly(2))
+            ->method('check')
+            ->willReturn(new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8'));
+
+        $httpClient = new MockHttpClient(new MockResponse('<html><body>...</body></html>'));
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            defaultMaxDepth: 1
+        );
+
+        $report = $crawler->crawl($startUrl);
+
+        $this->assertSame(2, $report->totalChecked);
+    }
 }

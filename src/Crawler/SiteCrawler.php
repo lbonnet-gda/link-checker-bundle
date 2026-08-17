@@ -61,11 +61,13 @@ final class SiteCrawler implements CrawlerInterface
             $link = $item['link'];
             $depth = $item['depth'];
 
-            if (isset($visited[$link->url])) {
+            $visitedKey = $this->visitedKey($link->url);
+
+            if (isset($visited[$visitedKey])) {
                 continue;
             }
 
-            $visited[$link->url] = true;
+            $visited[$visitedKey] = true;
             $totalChecked++;
 
             $checkResult = $this->urlChecker->check($link->url);
@@ -103,7 +105,7 @@ final class SiteCrawler implements CrawlerInterface
             $extracted = $this->extractor->extract($html, $link->url, $activeExcludePatterns);
 
             foreach ($extracted as $nextLink) {
-                if (isset($visited[$nextLink->url])) {
+                if (isset($visited[$this->visitedKey($nextLink->url)])) {
                     continue;
                 }
 
@@ -130,5 +132,14 @@ final class SiteCrawler implements CrawlerInterface
         $this->eventDispatcher?->dispatch(new CrawlCompletedEvent($report));
 
         return $report;
+    }
+
+    /**
+     * Normalizes the scheme to avoid crawling the same page twice just because it's
+     * reachable via both http:// and https://. The URL actually requested is left untouched.
+     */
+    private function visitedKey(string $url): string
+    {
+        return preg_replace('#^http://#i', 'https://', $url, 1) ?? $url;
     }
 }
