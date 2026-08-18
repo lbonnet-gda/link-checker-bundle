@@ -16,6 +16,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class CheckLinksCommandTest extends TestCase
 {
+    private string|false $previousColumns = false;
+
+    protected function setUp(): void
+    {
+        $this->previousColumns = getenv('COLUMNS');
+        putenv('COLUMNS=200');
+    }
+
+    protected function tearDown(): void
+    {
+        putenv(false === $this->previousColumns ? 'COLUMNS' : "COLUMNS=$this->previousColumns");
+    }
+
     public function testExecuteFailsWhenNoUrlProvided(): void
     {
         $crawler = $this->createMock(CrawlerInterface::class);
@@ -112,5 +125,37 @@ final class CheckLinksCommandTest extends TestCase
         $this->assertSame(Command::FAILURE, $exitCode);
         $this->assertStringContainsString('blocked by Akamai', $tester->getDisplay());
         $this->assertStringContainsString('anti-bot blocks', $tester->getDisplay());
+    }
+
+    public function testExecuteDoesNotBreakOnMultibyteAnchorTextLongerThanTruncationLimit(): void
+    {
+        $anchorWithMidCharacterCutPoint = str_repeat('a', 26).'é'.str_repeat('b', 50);
+
+        $crawler = $this->createMock(CrawlerInterface::class);
+        $crawler->method('crawl')->willReturn(
+            new CrawlReport(
+                startUrl: 'https://example.com',
+                brokenLinks: [
+                    [
+                        'link' => new ExtractedLink(
+                            'https://example.com/dead',
+                            'https://example.com',
+                            $anchorWithMidCharacterCutPoint,
+                            false
+                        ),
+                        'result' => new CheckResult('https://example.com/dead', Response::HTTP_NOT_FOUND, 0.1),
+                    ],
+                ],
+                totalChecked: 1,
+                totalDuration: 0.1
+            )
+        );
+
+        $command = new CheckLinksCommand($crawler, 'https://example.com');
+        $tester = new CommandTester($command);
+
+        $exitCode = $tester->execute([]);
+
+        $this->assertSame(Command::FAILURE, $exitCode);
     }
 }
