@@ -39,9 +39,21 @@ final class JsonFileReportStorageTest extends TestCase
                     'link' => new ExtractedLink('https://example.com/404', 'https://example.com', 'Broken', false),
                     'result' => new CheckResult('https://example.com/404', Response::HTTP_NOT_FOUND, 0.12),
                 ],
+                [
+                    'link' => new ExtractedLink(
+                        'https://protected.example.com', 'https://example.com', 'Partner', true
+                    ),
+                    'result' => new CheckResult(
+                        'https://protected.example.com',
+                        Response::HTTP_FORBIDDEN,
+                        0.15,
+                        likelyBlocked: true,
+                        blockedBy: 'Akamai',
+                    ),
+                ],
             ],
-            totalChecked: 1,
-            totalDuration: 0.12
+            totalChecked: 2,
+            totalDuration: 0.27
         );
 
         $savedPath = $storage->save($report);
@@ -50,7 +62,11 @@ final class JsonFileReportStorageTest extends TestCase
 
         $decoded = json_decode((string)file_get_contents($savedPath), true);
         $this->assertSame('https://example.com', $decoded['startUrl']);
-        $this->assertSame(1, $decoded['brokenLinksCount']);
+        $this->assertSame(2, $decoded['brokenLinksCount']);
+        $this->assertSame(1, $decoded['likelyBlockedCount']);
         $this->assertSame(Response::HTTP_NOT_FOUND, $decoded['brokenLinks'][0]['statusCode']);
+        $this->assertFalse($decoded['brokenLinks'][0]['likelyBlocked']);
+        $this->assertTrue($decoded['brokenLinks'][1]['likelyBlocked']);
+        $this->assertSame('Akamai', $decoded['brokenLinks'][1]['blockedBy']);
     }
 }

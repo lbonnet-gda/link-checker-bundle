@@ -34,6 +34,7 @@ link_checker:
     base_url: 'https://example.com' # Default base URL to crawl
     max_depth: 3 # Maximum crawl depth (0 = start page only)
     timeout: 10 # Per-request HTTP timeout in seconds
+    user_agent: 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)' # Sent as the User-Agent header; identify your crawler honestly, don't spoof a browser UA
     check_external: true # Check status of outbound links
     storage_dir: '%kernel.project_dir%/var/link_checker' # Directory for JSON audit reports
     exclude_patterns: # Regex patterns for URLs to ignore
@@ -177,6 +178,7 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
     "totalChecked": 42,
     "totalDuration": 3.12,
     "brokenLinksCount": 1,
+    "likelyBlockedCount": 0,
     "brokenLinks": [
         {
             "url": "https://example.com/missing-page",
@@ -186,13 +188,26 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
             "statusCode": 404,
             "duration": 0.08,
             "errorMessage": null,
-            "redirectUrl": null
+            "redirectUrl": null,
+            "likelyBlocked": false,
+            "blockedBy": null
         }
     ]
 }
 ```
 
 To disable automatic file storage, set `storage_dir: null` in your bundle configuration.
+
+### A note on external link false positives
+
+Some external sites reject automated HTTP clients outright (Akamai, Cloudflare, Sucuri, Incapsula, DataDome...),
+independently of what the resource actually contains. The bundle can't reliably bypass this — doing so would mean
+impersonating a browser to evade bot protection, which this bundle deliberately does not do. `UrlChecker` still flags
+this pattern when it recognizes a known bot-mitigation signature on a 403/429/503 response: the link is still reported
+as broken (the crawler genuinely couldn't fetch it), but each affected entry gets
+`"likelyBlocked": true` and a `"blockedBy"` provider name so you can distinguish "possibly just blocked" from
+"probably a real dead link" instead of treating every entry the same. The CLI table and summary line surface the same
+distinction. Domains you've manually verified as false positives can be silenced with `exclude_patterns`.
 
 ## License
 

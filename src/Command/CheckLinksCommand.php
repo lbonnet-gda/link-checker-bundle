@@ -161,7 +161,11 @@ final class CheckLinksCommand extends Command
                 $result = $item['result'];
 
                 if ($result->statusCode !== null) {
-                    $status = sprintf('<fg=red>%d</>', $result->statusCode);
+                    if ($result->likelyBlocked) {
+                        $status = sprintf('<fg=yellow>%d (blocked by %s?)</>', $result->statusCode, $result->blockedBy);
+                    } else {
+                        $status = sprintf('<fg=red>%d</>', $result->statusCode);
+                    }
                 } else {
                     $error = $result->errorMessage ?? 'Error';
                     if (str_contains($error, 'Idle timeout') || str_contains($error, 'timed out')) {
@@ -198,14 +202,28 @@ final class CheckLinksCommand extends Command
             $table->render();
             $io->newLine();
 
-            $io->error(
-                sprintf(
-                    'Found %d broken link(s) out of %d checked (Duration: %.2fs).',
-                    $report->getBrokenLinksCount(),
-                    $report->totalChecked,
-                    $report->totalDuration
+            $likelyBlockedCount = count(
+                array_filter(
+                    $report->brokenLinks,
+                    static fn(array $item) => $item['result']->likelyBlocked
                 )
             );
+
+            $summary = sprintf(
+                'Found %d broken link(s) out of %d checked (Duration: %.2fs).',
+                $report->getBrokenLinksCount(),
+                $report->totalChecked,
+                $report->totalDuration
+            );
+
+            if ($likelyBlockedCount > 0) {
+                $summary .= sprintf(
+                    ' %d of them look like anti-bot blocks rather than genuinely dead links — verify manually.',
+                    $likelyBlockedCount
+                );
+            }
+
+            $io->error($summary);
 
             return Command::FAILURE;
         } finally {
