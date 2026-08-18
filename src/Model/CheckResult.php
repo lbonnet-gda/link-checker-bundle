@@ -15,6 +15,8 @@ final class CheckResult
         public readonly ?string $errorMessage = null,
         public readonly ?string $redirectUrl = null,
         public readonly ?string $contentType = null,
+        public readonly bool $likelyBlocked = false,
+        public readonly ?string $blockedBy = null,
     ) {
     }
 

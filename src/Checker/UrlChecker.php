@@ -13,14 +13,53 @@ use Throwable;
 
 final class UrlChecker implements UrlCheckerInterface
 {
+    /**
+     * Status codes that can legitimately be returned just because a server (or a rule
+     * in front of it) doesn't handle HEAD requests properly, rather than because the
+     * resource is actually missing/forbidden. Worth a GET retry before trusting them.
+     */
     private const FALLBACK_STATUS_CODES = [
+        Response::HTTP_BAD_REQUEST,
         Response::HTTP_FORBIDDEN,
+        Response::HTTP_NOT_FOUND,
         Response::HTTP_METHOD_NOT_ALLOWED,
+        Response::HTTP_NOT_ACCEPTABLE,
+        Response::HTTP_NOT_IMPLEMENTED,
     ];
+
+    /**
+     * Status codes typically produced by bot-mitigation systems rather than by the
+     * requested resource genuinely being gone.
+     */
+    private const BOT_PROTECTION_STATUS_CODES = [
+        Response::HTTP_FORBIDDEN,
+        Response::HTTP_TOO_MANY_REQUESTS,
+        Response::HTTP_SERVICE_UNAVAILABLE,
+    ];
+
+    /**
+     * Best-effort signatures of known bot-mitigation/CDN providers: each entry is the
+     * response header to inspect and a substring to look for in its value (an empty
+     * needle means "header present" is signature enough).
+     *
+     * @var list<array{provider: string, header: string, needle: string}>
+     */
+    private const BOT_PROTECTION_SIGNATURES = [
+        ['provider' => 'Akamai', 'header' => 'server-timing', 'needle' => 'ak_p'],
+        ['provider' => 'Akamai', 'header' => 'server', 'needle' => 'akamaighost'],
+        ['provider' => 'Cloudflare', 'header' => 'cf-ray', 'needle' => ''],
+        ['provider' => 'Cloudflare', 'header' => 'cf-mitigated', 'needle' => ''],
+        ['provider' => 'Sucuri', 'header' => 'x-sucuri-id', 'needle' => ''],
+        ['provider' => 'Incapsula', 'header' => 'x-iinfo', 'needle' => ''],
+        ['provider' => 'DataDome', 'header' => 'x-datadome', 'needle' => ''],
+    ];
+
+    public const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)';
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly int $defaultTimeout = 10,
+        private readonly string $userAgent = self::DEFAULT_USER_AGENT,
     ) {
     }
 
@@ -33,6 +72,9 @@ final class UrlChecker implements UrlCheckerInterface
             $response = $this->httpClient->request(Request::METHOD_HEAD, $url, [
                 'timeout' => $requestTimeout,
                 'max_redirects' => 5,
+                'headers' => [
+                    'User-Agent' => $this->userAgent,
+                ],
             ]);
 
             $statusCode = $response->getStatusCode();
@@ -42,6 +84,7 @@ final class UrlChecker implements UrlCheckerInterface
                     'timeout' => $requestTimeout,
                     'max_redirects' => 5,
                     'headers' => [
+                        'User-Agent' => $this->userAgent,
                         'Range' => 'bytes=0-1024',
                     ],
                 ]);
@@ -52,13 +95,16 @@ final class UrlChecker implements UrlCheckerInterface
             $headers = $response->getHeaders(false);
             $contentType = $headers['content-type'][0] ?? null;
             $redirectUrl = $response->getInfo('redirect_url');
+            $blockedBy = $this->detectBotProtection($statusCode, $headers);
 
             return new CheckResult(
                 url: $url,
                 statusCode: $statusCode,
                 duration: round($duration, 3),
                 redirectUrl: $redirectUrl ?: null,
-                contentType: $contentType
+                contentType: $contentType,
+                likelyBlocked: $blockedBy !== null,
+                blockedBy: $blockedBy,
             );
         } catch (TransportExceptionInterface $e) {
             $duration = microtime(true) - $startTime;
@@ -77,5 +123,29 @@ final class UrlChecker implements UrlCheckerInterface
                 errorMessage: 'Unexpected error: '.$e->getMessage()
             );
         }
+    }
+
+    /**
+     * @param array<string, list<string>> $headers response headers, lower-cased keys
+     */
+    private function detectBotProtection(int $statusCode, array $headers): ?string
+    {
+        if (!in_array($statusCode, self::BOT_PROTECTION_STATUS_CODES, true)) {
+            return null;
+        }
+
+        foreach (self::BOT_PROTECTION_SIGNATURES as $signature) {
+            $value = $headers[$signature['header']][0] ?? null;
+
+            if ($value === null) {
+                continue;
+            }
+
+            if ($signature['needle'] === '' || stripos($value, $signature['needle']) !== false) {
+                return $signature['provider'];
+            }
+        }
+
+        return null;
     }
 }

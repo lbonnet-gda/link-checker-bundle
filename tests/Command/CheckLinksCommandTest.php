@@ -75,4 +75,42 @@ final class CheckLinksCommandTest extends TestCase
         $this->assertStringContainsString('https://example.com/dead', $tester->getDisplay());
         $this->assertStringContainsString('404', $tester->getDisplay());
     }
+
+    public function testExecuteFlagsLikelyBlockedLinksInOutput(): void
+    {
+        $crawler = $this->createMock(CrawlerInterface::class);
+        $crawler->method('crawl')->willReturn(
+            new CrawlReport(
+                startUrl: 'https://example.com',
+                brokenLinks: [
+                    [
+                        'link' => new ExtractedLink(
+                            'https://protected.example.com',
+                            'https://example.com',
+                            'Partner',
+                            true
+                        ),
+                        'result' => new CheckResult(
+                            'https://protected.example.com',
+                            Response::HTTP_FORBIDDEN,
+                            0.1,
+                            likelyBlocked: true,
+                            blockedBy: 'Akamai',
+                        ),
+                    ],
+                ],
+                totalChecked: 1,
+                totalDuration: 0.1
+            )
+        );
+
+        $command = new CheckLinksCommand($crawler, 'https://example.com');
+        $tester = new CommandTester($command);
+
+        $exitCode = $tester->execute([]);
+
+        $this->assertSame(Command::FAILURE, $exitCode);
+        $this->assertStringContainsString('blocked by Akamai', $tester->getDisplay());
+        $this->assertStringContainsString('anti-bot blocks', $tester->getDisplay());
+    }
 }

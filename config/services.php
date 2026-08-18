@@ -26,7 +26,8 @@ return static function (ContainerConfigurator $container): void {
         ]);
 
     $services->set(UrlChecker::class)
-        ->arg('$defaultTimeout', param('link_checker.timeout'));
+        ->arg('$defaultTimeout', param('link_checker.timeout'))
+        ->arg('$userAgent', param('link_checker.user_agent'));
 
     $services->set(SiteCrawler::class)
         ->arg('$defaultMaxDepth', param('link_checker.max_depth'))

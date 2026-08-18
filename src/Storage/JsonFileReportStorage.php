@@ -34,6 +34,12 @@ final class JsonFileReportStorage implements ReportStorageInterface
             'totalChecked' => $report->totalChecked,
             'totalDuration' => $report->totalDuration,
             'brokenLinksCount' => $report->getBrokenLinksCount(),
+            'likelyBlockedCount' => count(
+                array_filter(
+                    $report->brokenLinks,
+                    static fn(array $item) => $item['result']->likelyBlocked
+                )
+            ),
             'brokenLinks' => array_map(static fn(array $item) => [
                 'url' => $item['link']->url,
                 'sourceUrl' => $item['link']->sourceUrl,
@@ -43,6 +49,8 @@ final class JsonFileReportStorage implements ReportStorageInterface
                 'duration' => $item['result']->duration,
                 'errorMessage' => $item['result']->errorMessage,
                 'redirectUrl' => $item['result']->redirectUrl,
+                'likelyBlocked' => $item['result']->likelyBlocked,
+                'blockedBy' => $item['result']->blockedBy,
             ], $report->brokenLinks),
         ];
 

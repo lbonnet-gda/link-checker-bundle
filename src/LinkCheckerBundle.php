@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle;
 
+use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -30,6 +31,10 @@ final class LinkCheckerBundle extends AbstractBundle
                     ->min(1)
                     ->info('Per-request timeout in seconds when checking a URL.')
                 ->end()
+                ->scalarNode('user_agent')
+                    ->defaultValue(UrlChecker::DEFAULT_USER_AGENT)
+                    ->info('User-Agent header sent when checking a URL. Identify your crawler honestly; do not spoof a browser UA to bypass bot protection.')
+                ->end()
                 ->booleanNode('check_external')
                     ->defaultTrue()
                     ->info('Whether to check links pointing outside the base host.')
@@ -55,6 +60,7 @@ final class LinkCheckerBundle extends AbstractBundle
             ->set('link_checker.base_url', $config['base_url'])
             ->set('link_checker.max_depth', $config['max_depth'])
             ->set('link_checker.timeout', $config['timeout'])
+            ->set('link_checker.user_agent', $config['user_agent'])
             ->set('link_checker.check_external', $config['check_external'])
             ->set('link_checker.exclude_patterns', $config['exclude_patterns'])
             ->set('link_checker.storage_dir', $config['storage_dir']);
