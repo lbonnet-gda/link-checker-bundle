@@ -135,14 +135,12 @@ final class UrlChecker implements UrlCheckerInterface
         }
 
         foreach (self::BOT_PROTECTION_SIGNATURES as $signature) {
-            $value = $headers[$signature['header']][0] ?? null;
+            $values = $headers[$signature['header']] ?? [];
 
-            if ($value === null) {
-                continue;
-            }
-
-            if ($signature['needle'] === '' || stripos($value, $signature['needle']) !== false) {
-                return $signature['provider'];
+            foreach ($values as $value) {
+                if ($signature['needle'] === '' || stripos($value, $signature['needle']) !== false) {
+                    return $signature['provider'];
+                }
             }
         }
 

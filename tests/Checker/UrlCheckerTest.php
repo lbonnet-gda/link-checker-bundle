@@ -84,9 +84,13 @@ final class UrlCheckerTest extends TestCase
     {
         // 403 triggers a GET fallback (a real HEAD-handling issue can also return 403);
         // Akamai blocks both verbs here, so both mock responses carry its signature.
+        // Real Akamai responses send several "server-timing" header lines, and "ak_p" is
+        // rarely the first one — the detector must scan all of them, not just index 0.
         $akamaiResponse = static fn() => new MockResponse('', [
             'http_code' => Response::HTTP_FORBIDDEN,
-            'response_headers' => ['server-timing' => 'ak_p; desc="123"'],
+            'response_headers' => [
+                'server-timing' => ['cdn-cache; desc=HIT', 'edge; dur=1', 'ak_p; desc="123"'],
+            ],
         ]);
         $responses = [$akamaiResponse(), $akamaiResponse()];
         $client = new MockHttpClient($responses);
