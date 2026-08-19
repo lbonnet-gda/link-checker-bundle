@@ -9,6 +9,7 @@ use Lbonnet\LinkCheckerBundle\MessageHandler\CheckLinksMessageHandler;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $container): void {
     $services = $container->services()
@@ -26,10 +27,12 @@ return static function (ContainerConfigurator $container): void {
         ]);
 
     $services->set(UrlChecker::class)
+        ->arg('$httpClient', service('link_checker.http_client'))
         ->arg('$defaultTimeout', param('link_checker.timeout'))
         ->arg('$userAgent', param('link_checker.user_agent'));
 
     $services->set(SiteCrawler::class)
+        ->arg('$httpClient', service('link_checker.http_client'))
         ->arg('$defaultMaxDepth', param('link_checker.max_depth'))
         ->arg('$defaultCheckExternal', param('link_checker.check_external'))
         ->arg('$defaultExcludePatterns', param('link_checker.exclude_patterns'));

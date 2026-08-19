@@ -37,6 +37,7 @@ link_checker:
     user_agent: 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)' # Sent as the User-Agent header; identify your crawler honestly, don't spoof a browser UA
     check_external: true # Check status of outbound links
     storage_dir: '%kernel.project_dir%/var/link_checker' # Directory for JSON audit reports
+    allow_private_network: false # Allow requests to private/loopback/link-local IPs
     exclude_patterns: # Regex patterns for URLs to ignore
         - '#/admin#'
         - '#/login#'
@@ -198,7 +199,9 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
 
 To disable automatic file storage, set `storage_dir: null` in your bundle configuration.
 
-### A note on external link false positives
+## Notes
+
+### External link false positives
 
 Some external sites reject automated HTTP clients outright (Akamai, Cloudflare, Sucuri, Incapsula, DataDome...),
 independently of what the resource actually contains. The bundle can't reliably bypass this — doing so would mean
@@ -208,6 +211,22 @@ as broken (the crawler genuinely couldn't fetch it), but each affected entry get
 `"likelyBlocked": true` and a `"blockedBy"` provider name so you can distinguish "possibly just blocked" from
 "probably a real dead link" instead of treating every entry the same. The CLI table and summary line surface the same
 distinction. Domains you've manually verified as false positives can be silenced with `exclude_patterns`.
+
+### SSRF protection
+
+The crawler follows every link it finds on the pages it visits — including links planted by whoever controls the content
+being audited. If you point it at untrusted or third-party content, a malicious page could contain a link to
+`http://169.254.169.254/...` (cloud instance metadata), `http://localhost:6379` (an internal service), or any other
+address on your private network, and the bundle would otherwise dutifully request it from the machine running the crawl.
+
+To prevent this, requests are made through Symfony's [
+`NoPrivateNetworkHttpClient`](https://symfony.com/doc/current/http_client.html#ssrf-server-side-request-forgery-handling),
+which blocks requests resolving (including via DNS) to private, loopback, or link-local IP ranges. This is **on by
+default** and applies to every HTTP request the bundle makes (link checks and page fetches alike).
+
+Set `allow_private_network: true` only if you intentionally want to audit an internal network (e.g., a staging site
+reachable solely from behind a VPN) — and only when the content being crawled is fully trusted, since this also re-opens
+the SSRF exposure described above.
 
 ## License
 
