@@ -8,7 +8,10 @@ use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class LinkCheckerBundle extends AbstractBundle
 {
@@ -17,36 +20,40 @@ final class LinkCheckerBundle extends AbstractBundle
         // @formatter:off
         $definition->rootNode()
             ->children()
-                ->scalarNode('base_url')
-                    ->defaultNull()
-                    ->info('Default base URL to crawl when none is passed to the command.')
-                ->end()
-                ->integerNode('max_depth')
-                    ->defaultValue(3)
-                    ->min(0)
-                    ->info('Maximum crawl depth from the starting URL.')
-                ->end()
-                ->integerNode('timeout')
-                    ->defaultValue(10)
-                    ->min(1)
-                    ->info('Per-request timeout in seconds when checking a URL.')
-                ->end()
-                ->scalarNode('user_agent')
-                    ->defaultValue(UrlChecker::DEFAULT_USER_AGENT)
-                    ->info('User-Agent header sent when checking a URL. Identify your crawler honestly; do not spoof a browser UA to bypass bot protection.')
-                ->end()
-                ->booleanNode('check_external')
-                    ->defaultTrue()
-                    ->info('Whether to check links pointing outside the base host.')
-                ->end()
-                ->arrayNode('exclude_patterns')
-                    ->scalarPrototype()->end()
-                    ->info('Regular expression patterns for URLs to skip.')
-                ->end()
-                ->scalarNode('storage_dir')
-                    ->defaultValue('%kernel.project_dir%/var/link_checker')
-                    ->info('Directory where crawl reports in JSON will be stored. Set to empty or null to disable.')
-                ->end()
+            ->scalarNode('base_url')
+            ->defaultNull()
+            ->info('Default base URL to crawl when none is passed to the command.')
+            ->end()
+            ->integerNode('max_depth')
+            ->defaultValue(3)
+            ->min(0)
+            ->info('Maximum crawl depth from the starting URL.')
+            ->end()
+            ->integerNode('timeout')
+            ->defaultValue(10)
+            ->min(1)
+            ->info('Per-request timeout in seconds when checking a URL.')
+            ->end()
+            ->scalarNode('user_agent')
+            ->defaultValue(UrlChecker::DEFAULT_USER_AGENT)
+            ->info('User-Agent header sent when checking a URL. Identify your crawler honestly; do not spoof a browser UA to bypass bot protection.')
+            ->end()
+            ->booleanNode('check_external')
+            ->defaultTrue()
+            ->info('Whether to check links pointing outside the base host.')
+            ->end()
+            ->arrayNode('exclude_patterns')
+            ->scalarPrototype()->end()
+            ->info('Regular expression patterns for URLs to skip.')
+            ->end()
+            ->scalarNode('storage_dir')
+            ->defaultValue('%kernel.project_dir%/var/link_checker')
+            ->info('Directory where crawl reports in JSON will be stored. Set to empty or null to disable.')
+            ->end()
+            ->booleanNode('allow_private_network')
+            ->defaultFalse()
+            ->info('Allow requests to URLs resolving to private/loopback/link-local IP ranges (e.g. 127.0.0.1, 10.0.0.0/8, cloud metadata endpoints). The crawler follows links found on the pages it visits, so leaving this disabled (default) prevents SSRF if it ever crawls untrusted or third-party content. Enable only to intentionally audit an internal network.')
+            ->end()
             ->end()
         ;
         // @formatter:on
@@ -63,6 +70,14 @@ final class LinkCheckerBundle extends AbstractBundle
             ->set('link_checker.user_agent', $config['user_agent'])
             ->set('link_checker.check_external', $config['check_external'])
             ->set('link_checker.exclude_patterns', $config['exclude_patterns'])
-            ->set('link_checker.storage_dir', $config['storage_dir']);
+            ->set('link_checker.storage_dir', $config['storage_dir'])
+            ->set('link_checker.allow_private_network', $config['allow_private_network']);
+
+        if ($config['allow_private_network']) {
+            $builder->setAlias('link_checker.http_client', HttpClientInterface::class);
+        } else {
+            $builder->register('link_checker.http_client', NoPrivateNetworkHttpClient::class)
+                ->setArguments([new Reference(HttpClientInterface::class)]);
+        }
     }
 }

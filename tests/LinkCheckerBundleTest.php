@@ -18,6 +18,8 @@ use Lbonnet\LinkCheckerBundle\Storage\ReportStorageInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class LinkCheckerBundleTest extends TestCase
 {
@@ -40,6 +42,31 @@ final class LinkCheckerBundleTest extends TestCase
         $this->assertSame(
             '%kernel.project_dir%/var/link_checker',
             $container->getParameter('link_checker.storage_dir')
+        );
+        $this->assertFalse($container->getParameter('link_checker.allow_private_network'));
+
+        $this->assertTrue($container->hasDefinition('link_checker.http_client'));
+        $this->assertSame(
+            NoPrivateNetworkHttpClient::class,
+            $container->getDefinition('link_checker.http_client')->getClass()
+        );
+    }
+
+    public function testAllowPrivateNetworkDisablesSsrfProtection(): void
+    {
+        $container = $this->createContainer();
+        $bundle = new LinkCheckerBundle();
+        $extension = $bundle->getContainerExtension();
+
+        $this->assertNotNull($extension);
+
+        $extension->load(['link_checker' => ['allow_private_network' => true]], $container);
+
+        $this->assertTrue($container->getParameter('link_checker.allow_private_network'));
+        $this->assertTrue($container->hasAlias('link_checker.http_client'));
+        $this->assertSame(
+            HttpClientInterface::class,
+            (string)$container->getAlias('link_checker.http_client')
         );
     }
 
