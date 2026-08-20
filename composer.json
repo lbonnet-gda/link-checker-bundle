@@ -38,6 +38,10 @@
         "symfony/phpunit-bridge": "^6.4 || ^7.4 || ^8.1",
         "phpunit/phpunit": "^10.5 || ^11.5"
     },
+    "suggest": {
+        "symfony/notifier": "To send alerts (Slack, email, ...) from a CrawlCompletedEvent listener.",
+        "symfony/scheduler": "To run periodic audits via a RecurringMessage, as shown in the README."
+    },
     "autoload": {
         "psr-4": {
             "Lbonnet\\LinkCheckerBundle\\": "src/"
