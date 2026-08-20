@@ -13,6 +13,8 @@ use Lbonnet\LinkCheckerBundle\Extractor\HtmlLinkExtractor;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
 use Lbonnet\LinkCheckerBundle\LinkCheckerBundle;
 use Lbonnet\LinkCheckerBundle\MessageHandler\CheckLinksMessageHandler;
+use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtChecker;
+use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use Lbonnet\LinkCheckerBundle\Storage\ReportStorageInterface;
 use PHPUnit\Framework\TestCase;
@@ -44,6 +46,7 @@ final class LinkCheckerBundleTest extends TestCase
             $container->getParameter('link_checker.storage_dir')
         );
         $this->assertFalse($container->getParameter('link_checker.allow_private_network'));
+        $this->assertTrue($container->getParameter('link_checker.respect_robots_txt'));
 
         $this->assertTrue($container->hasDefinition('link_checker.http_client'));
         $this->assertSame(
@@ -90,6 +93,7 @@ final class LinkCheckerBundleTest extends TestCase
                     '#/admin#',
                     '#/logout#',
                 ],
+                'respect_robots_txt' => false,
             ],
         ];
 
@@ -102,6 +106,7 @@ final class LinkCheckerBundleTest extends TestCase
         $this->assertFalse($container->getParameter('link_checker.check_external'));
         $this->assertSame(['#/admin#', '#/logout#'], $container->getParameter('link_checker.exclude_patterns'));
         $this->assertSame('/custom/storage/path', $container->getParameter('link_checker.storage_dir'));
+        $this->assertFalse($container->getParameter('link_checker.respect_robots_txt'));
 
         $this->assertTrue($container->hasDefinition(HtmlLinkExtractor::class));
         $this->assertTrue($container->hasDefinition(UrlChecker::class));
@@ -109,6 +114,7 @@ final class LinkCheckerBundleTest extends TestCase
         $this->assertTrue($container->hasDefinition(CheckLinksCommand::class));
         $this->assertTrue($container->hasDefinition(CheckLinksMessageHandler::class));
         $this->assertTrue($container->hasDefinition(JsonFileReportStorage::class));
+        $this->assertTrue($container->hasDefinition(RobotsTxtChecker::class));
 
         $this->assertTrue(
             $container->hasAlias(LinkExtractorInterface::class)
@@ -125,6 +131,10 @@ final class LinkCheckerBundleTest extends TestCase
         $this->assertTrue(
             $container->hasAlias(ReportStorageInterface::class)
             || $container->hasDefinition(ReportStorageInterface::class)
+        );
+        $this->assertTrue(
+            $container->hasAlias(RobotsTxtCheckerInterface::class)
+            || $container->hasDefinition(RobotsTxtCheckerInterface::class)
         );
     }
 

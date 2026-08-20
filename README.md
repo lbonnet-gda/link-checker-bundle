@@ -38,6 +38,7 @@ link_checker:
     check_external: true # Check status of outbound links
     storage_dir: '%kernel.project_dir%/var/link_checker' # Directory for JSON audit reports
     allow_private_network: false # Allow requests to private/loopback/link-local IPs
+    respect_robots_txt: true # Honor the crawled site's robots.txt when following internal links
     exclude_patterns: # Regex patterns for URLs to ignore
         - '#/admin#'
         - '#/login#'

@@ -10,6 +10,8 @@ use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
+use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
@@ -133,6 +135,45 @@ final class SiteCrawlerTest extends TestCase
             extractor: $extractor,
             urlChecker: $urlChecker,
             httpClient: $httpClient,
+            defaultMaxDepth: 1
+        );
+
+        $report = $crawler->crawl($startUrl);
+
+        $this->assertSame(2, $report->totalChecked);
+    }
+
+    public function testCrawlSkipsInternalLinksDisallowedByRobotsTxt(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturn([
+            new ExtractedLink('https://example.com/allowed', $startUrl, 'Allowed', false),
+            new ExtractedLink('https://example.com/blocked', $startUrl, 'Blocked', false),
+        ]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturnCallback(static function (string $url) {
+            if (str_contains($url, '/blocked')) {
+                throw new LogicException('A robots.txt-disallowed URL must never be checked.');
+            }
+
+            return new CheckResult($url, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8');
+        });
+
+        $httpClient = new MockHttpClient(new MockResponse('<html><body>...</body></html>'));
+
+        $robotsTxtChecker = $this->createMock(RobotsTxtCheckerInterface::class);
+        $robotsTxtChecker->method('isAllowed')->willReturnCallback(
+            static fn(string $url) => !str_contains($url, '/blocked')
+        );
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            robotsTxtChecker: $robotsTxtChecker,
             defaultMaxDepth: 1
         );
 
