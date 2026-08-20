@@ -6,6 +6,8 @@ namespace Lbonnet\LinkCheckerBundle;
 
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
 use Lbonnet\LinkCheckerBundle\Http\ThrottledHttpClient;
+use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
+use Lbonnet\LinkCheckerBundle\Storage\ReportStorageInterface;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -96,5 +98,10 @@ final class LinkCheckerBundle extends AbstractBundle
 
         $builder->register('link_checker.http_client', ThrottledHttpClient::class)
             ->setArguments([new Reference($privateNetworkGuardId), $config['request_delay_ms']]);
+
+        if ($config['storage_dir'] === null || $config['storage_dir'] === '') {
+            $builder->removeDefinition(JsonFileReportStorage::class);
+            $builder->removeAlias(ReportStorageInterface::class);
+        }
     }
 }

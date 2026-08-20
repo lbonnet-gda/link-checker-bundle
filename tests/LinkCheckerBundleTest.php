@@ -156,6 +156,37 @@ final class LinkCheckerBundleTest extends TestCase
         );
     }
 
+    public function testNullStorageDirDisablesReportStorageService(): void
+    {
+        $container = $this->createContainer();
+        $bundle = new LinkCheckerBundle();
+        $extension = $bundle->getContainerExtension();
+
+        $this->assertNotNull($extension);
+
+        $extension->load(['link_checker' => ['storage_dir' => null]], $container);
+
+        $this->assertNull($container->getParameter('link_checker.storage_dir'));
+        $this->assertFalse($container->hasDefinition(JsonFileReportStorage::class));
+        $this->assertFalse(
+            $container->hasAlias(ReportStorageInterface::class)
+            || $container->hasDefinition(ReportStorageInterface::class)
+        );
+    }
+
+    public function testEmptyStorageDirDisablesReportStorageService(): void
+    {
+        $container = $this->createContainer();
+        $bundle = new LinkCheckerBundle();
+        $extension = $bundle->getContainerExtension();
+
+        $this->assertNotNull($extension);
+
+        $extension->load(['link_checker' => ['storage_dir' => '']], $container);
+
+        $this->assertFalse($container->hasDefinition(JsonFileReportStorage::class));
+    }
+
     private function createContainer(): ContainerBuilder
     {
         $tempDir = sys_get_temp_dir();
