@@ -7,6 +7,7 @@ namespace Lbonnet\LinkCheckerBundle\Crawler;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
+use Lbonnet\LinkCheckerBundle\Http\ThrottleExemptionInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
@@ -61,72 +62,82 @@ final class SiteCrawler implements CrawlerInterface
             ],
         ];
 
-        while (!empty($queue)) {
-            $item = array_shift($queue);
-            $link = $item['link'];
-            $depth = $item['depth'];
+        $startHost = parse_url($startUrl, PHP_URL_HOST);
+        $throttle = is_string($startHost) && $this->httpClient instanceof ThrottleExemptionInterface
+            ? $this->httpClient
+            : null;
+        $throttle?->setExemptHost($startHost);
 
-            $visitedKey = $this->visitedKey($link->url);
+        try {
+            while (!empty($queue)) {
+                $item = array_shift($queue);
+                $link = $item['link'];
+                $depth = $item['depth'];
 
-            if (isset($visited[$visitedKey])) {
-                continue;
-            }
+                $visitedKey = $this->visitedKey($link->url);
 
-            $visited[$visitedKey] = true;
-            $totalChecked++;
-
-            $checkResult = $this->urlChecker->check($link->url);
-
-            if ($checkResult->isBroken()) {
-                $brokenLinks[] = [
-                    'link' => $link,
-                    'result' => $checkResult,
-                ];
-            }
-
-            if ($progressCallback !== null) {
-                $progressCallback($link->url, $totalChecked, $checkResult->isBroken());
-            }
-
-            if ($link->isExternal || $checkResult->isBroken()) {
-                continue;
-            }
-
-            if ($depth >= $maxDepth) {
-                continue;
-            }
-
-            if ($checkResult->contentType !== null && !str_contains($checkResult->contentType, 'text/html')) {
-                continue;
-            }
-
-            try {
-                $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
-                $html = $response->getContent();
-            } catch (Throwable) {
-                continue;
-            }
-
-            $extracted = $this->extractor->extract($html, $link->url, $activeExcludePatterns);
-
-            foreach ($extracted as $nextLink) {
-                if (isset($visited[$this->visitedKey($nextLink->url)])) {
+                if (isset($visited[$visitedKey])) {
                     continue;
                 }
 
-                if ($nextLink->isExternal && !$checkExternal) {
+                $visited[$visitedKey] = true;
+                $totalChecked++;
+
+                $checkResult = $this->urlChecker->check($link->url);
+
+                if ($checkResult->isBroken()) {
+                    $brokenLinks[] = [
+                        'link' => $link,
+                        'result' => $checkResult,
+                    ];
+                }
+
+                if ($progressCallback !== null) {
+                    $progressCallback($link->url, $totalChecked, $checkResult->isBroken());
+                }
+
+                if ($link->isExternal || $checkResult->isBroken()) {
                     continue;
                 }
 
-                $queue[] = [
-                    'link' => $nextLink,
-                    'depth' => $depth + 1,
-                ];
-            }
+                if ($depth >= $maxDepth) {
+                    continue;
+                }
+
+                if ($checkResult->contentType !== null && !str_contains($checkResult->contentType, 'text/html')) {
+                    continue;
+                }
+
+                try {
+                    $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
+                    $html = $response->getContent();
+                } catch (Throwable) {
+                    continue;
+                }
+
+                $extracted = $this->extractor->extract($html, $link->url, $activeExcludePatterns);
+
+                foreach ($extracted as $nextLink) {
+                    if (isset($visited[$this->visitedKey($nextLink->url)])) {
+                        continue;
+                    }
+
+                    if ($nextLink->isExternal && !$checkExternal) {
+                        continue;
+                    }
+
                 if (!$nextLink->isExternal && $this->robotsTxtChecker?->isAllowed($nextLink->url) === false) {
                     continue;
                 }
 
+                    $queue[] = [
+                        'link' => $nextLink,
+                        'depth' => $depth + 1,
+                    ];
+                }
+            }
+        } finally {
+            $throttle?->setExemptHost(null);
         }
 
         $totalDuration = microtime(true) - $startTime;

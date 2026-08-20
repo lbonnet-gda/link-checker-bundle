@@ -8,6 +8,7 @@ use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
+use Lbonnet\LinkCheckerBundle\Http\ThrottleExemptionInterface;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
@@ -18,6 +19,9 @@ use RuntimeException;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 
 final class SiteCrawlerTest extends TestCase
 {
@@ -180,5 +184,63 @@ final class SiteCrawlerTest extends TestCase
         $report = $crawler->crawl($startUrl);
 
         $this->assertSame(2, $report->totalChecked);
+    }
+
+    public function testCrawlExemptsTheAuditedHostFromThrottling(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturn([]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturn(
+            new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8')
+        );
+
+        $httpClient = new class(new MockHttpClient(new MockResponse('<html></html>')))
+            implements HttpClientInterface, ThrottleExemptionInterface {
+            /** @var list<?string> */
+            public array $exemptHostCalls = [];
+
+            public function __construct(private HttpClientInterface $inner)
+            {
+            }
+
+            public function setExemptHost(?string $host): void
+            {
+                $this->exemptHostCalls[] = $host;
+            }
+
+            public function request(string $method, string $url, array $options = []): ResponseInterface
+            {
+                return $this->inner->request($method, $url, $options);
+            }
+
+            public function stream(
+                ResponseInterface|iterable $responses,
+                ?float $timeout = null
+            ): ResponseStreamInterface {
+                return $this->inner->stream($responses, $timeout);
+            }
+
+            public function withOptions(array $options): static
+            {
+                $clone = clone $this;
+                $clone->inner = $this->inner->withOptions($options);
+
+                return $clone;
+            }
+        };
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+        );
+
+        $crawler->crawl($startUrl);
+
+        $this->assertSame(['example.com', null], $httpClient->exemptHostCalls);
     }
 }

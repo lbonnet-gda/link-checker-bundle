@@ -38,6 +38,7 @@ link_checker:
     check_external: true # Check status of outbound links
     storage_dir: '%kernel.project_dir%/var/link_checker' # Directory for JSON audit reports
     allow_private_network: false # Allow requests to private/loopback/link-local IPs
+    request_delay_ms: 200 # Minimum delay between consecutive requests to a host other than the one being crawled
     respect_robots_txt: true # Honor the crawled site's robots.txt when following internal links
     exclude_patterns: # Regex patterns for URLs to ignore
         - '#/admin#'
@@ -228,6 +229,22 @@ default** and applies to every HTTP request the bundle makes (link checks and pa
 Set `allow_private_network: true` only if you intentionally want to audit an internal network (e.g., a staging site
 reachable solely from behind a VPN) — and only when the content being crawled is fully trusted, since this also re-opens
 the SSRF exposure described above.
+
+### Being a polite crawler
+
+Because `check_external: true` is the default, an audit routinely sends requests to sites you don't own or control. Two
+settings help keep that well-behaved:
+
+- **`request_delay_ms`** (`200` by default) enforces a minimum delay between consecutive requests to a host, across both
+  link checks and page fetches. The host you're crawling is always exempt — it's the one site you actually control and
+  want audited quickly, not throttled against itself — so this setting only ever slows down requests to *other* hosts,
+  chiefly the external links it finds. Raise it if a crawl is likely to hammer one particular third-party domain with
+  many links; set it to `0` to disable throttling everywhere, including external hosts, if you're confident that's fine
+  for your use case.
+- **`respect_robots_txt`** (on by default) fetches the crawled site's `robots.txt` once per host and stops the crawler
+  from following or checking further **internal** links under a disallowed path. It doesn't affect the URL you
+  explicitly pass as the crawl's starting point, and it doesn't apply to external links, which only ever get a single
+  status check rather than being recursively crawled.
 
 ## License
 

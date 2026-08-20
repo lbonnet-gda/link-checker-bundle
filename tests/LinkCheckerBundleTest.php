@@ -11,6 +11,7 @@ use Lbonnet\LinkCheckerBundle\Crawler\CrawlerInterface;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Lbonnet\LinkCheckerBundle\Extractor\HtmlLinkExtractor;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
+use Lbonnet\LinkCheckerBundle\Http\ThrottledHttpClient;
 use Lbonnet\LinkCheckerBundle\LinkCheckerBundle;
 use Lbonnet\LinkCheckerBundle\MessageHandler\CheckLinksMessageHandler;
 use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtChecker;
@@ -46,13 +47,23 @@ final class LinkCheckerBundleTest extends TestCase
             $container->getParameter('link_checker.storage_dir')
         );
         $this->assertFalse($container->getParameter('link_checker.allow_private_network'));
+        $this->assertSame(200, $container->getParameter('link_checker.request_delay_ms'));
         $this->assertTrue($container->getParameter('link_checker.respect_robots_txt'));
 
-        $this->assertTrue($container->hasDefinition('link_checker.http_client'));
+        $this->assertTrue($container->hasDefinition('link_checker.http_client.private_network_guard'));
         $this->assertSame(
             NoPrivateNetworkHttpClient::class,
-            $container->getDefinition('link_checker.http_client')->getClass()
+            $container->getDefinition('link_checker.http_client.private_network_guard')->getClass()
         );
+
+        $this->assertTrue($container->hasDefinition('link_checker.http_client'));
+        $httpClientDefinition = $container->getDefinition('link_checker.http_client');
+        $this->assertSame(ThrottledHttpClient::class, $httpClientDefinition->getClass());
+        $this->assertSame(
+            'link_checker.http_client.private_network_guard',
+            (string)$httpClientDefinition->getArgument(0)
+        );
+        $this->assertSame(200, $httpClientDefinition->getArgument(1));
     }
 
     public function testAllowPrivateNetworkDisablesSsrfProtection(): void
@@ -63,14 +74,21 @@ final class LinkCheckerBundleTest extends TestCase
 
         $this->assertNotNull($extension);
 
-        $extension->load(['link_checker' => ['allow_private_network' => true]], $container);
+        $extension->load(
+            ['link_checker' => ['allow_private_network' => true, 'request_delay_ms' => 250]],
+            $container
+        );
 
         $this->assertTrue($container->getParameter('link_checker.allow_private_network'));
-        $this->assertTrue($container->hasAlias('link_checker.http_client'));
+        $this->assertTrue($container->hasAlias('link_checker.http_client.private_network_guard'));
         $this->assertSame(
             HttpClientInterface::class,
-            (string)$container->getAlias('link_checker.http_client')
+            (string)$container->getAlias('link_checker.http_client.private_network_guard')
         );
+
+        $httpClientDefinition = $container->getDefinition('link_checker.http_client');
+        $this->assertSame(ThrottledHttpClient::class, $httpClientDefinition->getClass());
+        $this->assertSame(250, $httpClientDefinition->getArgument(1));
     }
 
     public function testCustomConfigurationAndServiceRegistration(): void
