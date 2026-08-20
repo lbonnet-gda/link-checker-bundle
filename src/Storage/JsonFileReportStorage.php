@@ -21,9 +21,10 @@ final class JsonFileReportStorage implements ReportStorageInterface
         }
 
         $filename = sprintf(
-            'report-%s-%s.json',
+            'report-%s-%s-%s.json',
             date('Y-m-d_H-i-s'),
-            substr(md5($report->startUrl), 0, 8)
+            substr(md5($report->startUrl), 0, 8),
+            uniqid('', true)
         );
 
         $filePath = rtrim($this->storageDirectory, '/').'/'.$filename;

@@ -65,4 +65,42 @@ final class HtmlLinkExtractorTest extends TestCase
         $this->assertCount(1, $links);
         $this->assertSame('https://example.com/public/page', $links[0]->url);
     }
+
+    public function testExtractResolvesParentDirectoryTraversal(): void
+    {
+        $html = <<<HTML
+        <a href="../../about">Up two levels</a>
+        <a href="../sibling">Up one level</a>
+        HTML;
+
+        $links = $this->extractor->extract($html, 'https://example.com/blog/2024/post.html');
+
+        $this->assertCount(2, $links);
+        $this->assertSame('https://example.com/about', $links[0]->url);
+        $this->assertSame('https://example.com/blog/sibling', $links[1]->url);
+    }
+
+    public function testExtractResolvesParentDirectoryTraversalPastRoot(): void
+    {
+        $html = '<a href="../../../overflow">Too many levels up</a>';
+
+        $links = $this->extractor->extract($html, 'https://example.com/blog/post.html');
+
+        $this->assertCount(1, $links);
+        $this->assertSame('https://example.com/overflow', $links[0]->url);
+    }
+
+    public function testExtractPreservesQueryStringAndStripsFragment(): void
+    {
+        $html = <<<HTML
+        <a href="/search?q=test&page=2">Absolute with query</a>
+        <a href="results?sort=asc#top">Relative with query and fragment</a>
+        HTML;
+
+        $links = $this->extractor->extract($html, 'https://example.com/blog/index.html');
+
+        $this->assertCount(2, $links);
+        $this->assertSame('https://example.com/search?q=test&page=2', $links[0]->url);
+        $this->assertSame('https://example.com/blog/results?sort=asc', $links[1]->url);
+    }
 }
