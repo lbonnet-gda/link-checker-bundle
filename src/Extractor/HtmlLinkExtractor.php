@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Extractor;
 
+use DOMElement;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -33,6 +34,10 @@ final class HtmlLinkExtractor implements LinkExtractorInterface
         $seenUrls = [];
 
         foreach ($crawler->filter('a[href]') as $element) {
+            if (!$element instanceof DOMElement) {
+                continue;
+            }
+
             $rawHref = trim($element->getAttribute('href'));
             $anchorText = trim($element->textContent);
 

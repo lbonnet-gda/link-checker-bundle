@@ -86,6 +86,7 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
         $collectingAgents = true;
 
         $commit = function () use (&$groups, &$agents, &$rules): void {
+            // @phpstan-ignore-next-line foreach.emptyArray
             foreach ($agents as $agent) {
                 $groups[$agent] = array_merge($groups[$agent] ?? [], $rules);
             }

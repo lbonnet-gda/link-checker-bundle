@@ -210,7 +210,7 @@ final class CheckLinksCommand extends Command
             $startHost = parse_url($startUrl, PHP_URL_HOST);
 
             if ($sourceHost === $startHost) {
-                $sourcePath = parse_url($link->sourceUrl, PHP_URL_PATH) ?? '/';
+                $sourcePath = parse_url($link->sourceUrl, PHP_URL_PATH) ?: '/';
                 $sourceDisplay = sprintf(
                     '<href=%s>%s</>',
                     $link->sourceUrl,

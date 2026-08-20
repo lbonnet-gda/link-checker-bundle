@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Http;
 
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\ResponseStreamInterface;
@@ -35,6 +36,10 @@ final class ThrottledHttpClient implements HttpClientInterface, ResetInterface, 
         $this->exemptHost = $host !== null ? strtolower($host) : null;
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @throws TransportExceptionInterface
+     */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
         $this->throttle($url);
@@ -47,6 +52,9 @@ final class ThrottledHttpClient implements HttpClientInterface, ResetInterface, 
         return $this->client->stream($responses, $timeout);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function withOptions(array $options): static
     {
         $clone = clone $this;

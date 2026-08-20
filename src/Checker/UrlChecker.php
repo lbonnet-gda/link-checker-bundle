@@ -92,6 +92,7 @@ final class UrlChecker implements UrlCheckerInterface
             }
 
             $duration = microtime(true) - $startTime;
+            /** @var array<string, list<string>> $headers */
             $headers = $response->getHeaders(false);
             $contentType = $headers['content-type'][0] ?? null;
             $redirectUrl = $response->getInfo('redirect_url');

@@ -52,13 +52,34 @@ jobs:
             -   name: Run PHPUnit tests
                 run: ./vendor/bin/phpunit
 
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v7
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.1'
+                    extensions: mbstring, xml, ctype, iconv
+                    coverage: none
+
+            -   name: Install dependencies
+                run: composer update --prefer-dist --no-progress --no-interaction
+
+            -   name: Run PHPStan
+                run: ./vendor/bin/phpstan analyse --no-progress
+
     ci-status:
         name: CI Status
-        needs: phpunit
+        needs: [ phpunit, phpstan ]
         runs-on: ubuntu-latest
         if: always()
         steps:
             -   run: |
-                    if [ "${{ needs.phpunit.result }}" != "success" ]; then
+                    if [ "${{ needs.phpunit.result }}" != "success" ] || [ "${{ needs.phpstan.result }}" != "success" ]; then
                       exit 1
                     fi

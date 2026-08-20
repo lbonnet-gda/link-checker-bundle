@@ -63,10 +63,12 @@ final class SiteCrawler implements CrawlerInterface
         ];
 
         $startHost = parse_url($startUrl, PHP_URL_HOST);
-        $throttle = is_string($startHost) && $this->httpClient instanceof ThrottleExemptionInterface
-            ? $this->httpClient
-            : null;
-        $throttle?->setExemptHost($startHost);
+        $throttle = null;
+
+        if (is_string($startHost) && $this->httpClient instanceof ThrottleExemptionInterface) {
+            $throttle = $this->httpClient;
+            $throttle->setExemptHost($startHost);
+        }
 
         try {
             while (!empty($queue)) {
