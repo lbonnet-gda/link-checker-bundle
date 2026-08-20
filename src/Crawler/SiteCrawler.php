@@ -126,9 +126,9 @@ final class SiteCrawler implements CrawlerInterface
                         continue;
                     }
 
-                if (!$nextLink->isExternal && $this->robotsTxtChecker?->isAllowed($nextLink->url) === false) {
-                    continue;
-                }
+                    if (!$nextLink->isExternal && $this->robotsTxtChecker?->isAllowed($nextLink->url) === false) {
+                        continue;
+                    }
 
                     $queue[] = [
                         'link' => $nextLink,
