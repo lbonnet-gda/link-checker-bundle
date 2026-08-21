@@ -250,6 +250,14 @@ settings help keep that well-behaved:
   explicitly pass as the crawl's starting point, and it doesn't apply to external links, which only ever get a single
   status check rather than being recursively crawled.
 
+### Query strings and crawl size
+
+URLs are deduplicated as-is: `/page?id=1` and `/page?id=2` are treated as two distinct pages, since a query string often
+identifies genuinely different content (an article ID, a product SKU...) rather than noise — silently collapsing them
+could make the crawler skip a broken link instead of reporting it. On sites where some parameters are pure noise instead
+(pagination, sorting, tracking like `utm_*`), this can inflate the number of URLs crawled; use
+`exclude_patterns` to filter those out explicitly, e.g. `'#[?&]utm_#'` or `'#\?page=#'`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
