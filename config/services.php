@@ -25,6 +25,7 @@ return static function (ContainerConfigurator $container): void {
             '../src/Model/',
             '../src/Event/',
             '../src/Message/',
+            '../src/Http/BoundedContentReader.php',
         ]);
 
     $services->set(UrlChecker::class)

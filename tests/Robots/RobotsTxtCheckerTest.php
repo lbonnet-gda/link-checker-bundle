@@ -82,6 +82,20 @@ final class RobotsTxtCheckerTest extends TestCase
         $this->assertTrue($checker->isAllowed('https://example.com/files/report.txt'));
     }
 
+    public function testTruncatesRobotsTxtBeyondTheSizeCap(): void
+    {
+        $padding = str_repeat("# padding\n", 50_001);
+        $body = (static function () use ($padding) {
+            yield $padding;
+            yield "User-agent: *\nDisallow: /late\n";
+        })();
+
+        $client = new MockHttpClient(static fn() => new MockResponse($body));
+        $checker = new RobotsTxtChecker($client, 'TestBot/1.0');
+
+        $this->assertTrue($checker->isAllowed('https://example.com/late'));
+    }
+
     public function testFetchesRobotsTxtOnlyOncePerHost(): void
     {
         $calls = 0;

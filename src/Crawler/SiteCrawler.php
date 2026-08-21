@@ -7,6 +7,7 @@ namespace Lbonnet\LinkCheckerBundle\Crawler;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
+use Lbonnet\LinkCheckerBundle\Http\BoundedContentReader;
 use Lbonnet\LinkCheckerBundle\Http\ThrottleExemptionInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
@@ -20,6 +21,14 @@ use Throwable;
 
 final class SiteCrawler implements CrawlerInterface
 {
+    /**
+     * Caps how much of a page's body is read before extracting links from it. Internal
+     * pages are fetched in full (unlike external links, which only ever get a small
+     * Range request), so a compromised or oversized page shouldn't be able to exhaust
+     * the crawler's memory just because it's reachable from the site being audited.
+     */
+    private const MAX_HTML_LENGTH = 5_000_000;
+
     public function __construct(
         private readonly LinkExtractorInterface $extractor,
         private readonly UrlCheckerInterface $urlChecker,
@@ -114,7 +123,7 @@ final class SiteCrawler implements CrawlerInterface
 
                 try {
                     $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
-                    $html = $response->getContent();
+                    $html = BoundedContentReader::read($this->httpClient, $response, self::MAX_HTML_LENGTH);
 
                     $infoUrl = $response->getInfo('url');
                     if (is_string($infoUrl) && $infoUrl !== '') {

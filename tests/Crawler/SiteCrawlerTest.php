@@ -216,6 +216,43 @@ final class SiteCrawlerTest extends TestCase
         $crawler->crawl($startUrl);
     }
 
+    public function testCrawlDoesNotExtractLinksBeyondTheHtmlSizeCap(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $padding = str_repeat('a', 5_000_001);
+        $body = (static function () use ($padding) {
+            yield $padding;
+            yield '<a href="/late">Too late</a>';
+        })();
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->expects($this->once())
+            ->method('extract')
+            ->with(
+                $this->callback(static fn(string $html) => !str_contains($html, '/late')),
+                $this->anything(),
+                $this->anything()
+            )
+            ->willReturn([]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturn(
+            new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8')
+        );
+
+        $httpClient = new MockHttpClient(new MockResponse($body));
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            defaultMaxDepth: 1
+        );
+
+        $crawler->crawl($startUrl);
+    }
+
     public function testCrawlExemptsTheAuditedHostFromThrottling(): void
     {
         $startUrl = 'https://example.com';

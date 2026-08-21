@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Robots;
 
+use Lbonnet\LinkCheckerBundle\Http\BoundedContentReader;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -66,7 +67,7 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
                 return;
             }
 
-            $content = substr($response->getContent(), 0, self::MAX_CONTENT_LENGTH);
+            $content = BoundedContentReader::read($this->httpClient, $response, self::MAX_CONTENT_LENGTH);
         } catch (Throwable) {
             return;
         }
