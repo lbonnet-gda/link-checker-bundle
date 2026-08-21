@@ -159,6 +159,50 @@ final class JsonFileReportStorageTest extends TestCase
         $this->assertFileExists($secondPath);
     }
 
+    public function testSaveDoesNotRotateWhenMaxReportsIsZero(): void
+    {
+        $storage = new JsonFileReportStorage($this->tempDir, maxReports: 0);
+        $report = new CrawlReport(startUrl: 'https://example.com');
+
+        for ($i = 0; $i < 5; $i++) {
+            $storage->save($report);
+        }
+
+        $this->assertCount(5, glob($this->tempDir.'/*.json') ?: []);
+    }
+
+    public function testSaveRotatesOldestReportsPastTheLimit(): void
+    {
+        $storage = new JsonFileReportStorage($this->tempDir, maxReports: 3);
+        $report = new CrawlReport(startUrl: 'https://example.com');
+
+        $paths = [];
+        for ($i = 0; $i < 5; $i++) {
+            $paths[] = $storage->save($report);
+            usleep(1_100_000);
+        }
+
+        $remaining = glob($this->tempDir.'/*.json') ?: [];
+        $this->assertCount(3, $remaining);
+
+        foreach (array_slice($paths, 0, 2) as $deleted) {
+            $this->assertFileDoesNotExist($deleted);
+        }
+        foreach (array_slice($paths, 2) as $kept) {
+            $this->assertFileExists($kept);
+        }
+    }
+
+    public function testSaveRotationIsScopedPerStartUrl(): void
+    {
+        $storage = new JsonFileReportStorage($this->tempDir, maxReports: 1);
+
+        $firstSitePath = $storage->save(new CrawlReport(startUrl: 'https://example.com'));
+        $storage->save(new CrawlReport(startUrl: 'https://another-example.com'));
+
+        $this->assertFileExists($firstSitePath);
+    }
+
     public function testSaveThrowsWhenStorageDirectoryCannotBeCreated(): void
     {
         file_put_contents($this->tempDir, 'not a directory');

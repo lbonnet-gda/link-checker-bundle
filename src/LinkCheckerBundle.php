@@ -63,6 +63,14 @@ final class LinkCheckerBundle extends AbstractBundle
             ->info('Directory where crawl reports in JSON will be stored. Set to empty or null to disable.')
             ->end();
 
+        $children->integerNode('storage_max_reports')
+            ->defaultValue(30)
+            ->min(0)
+            ->info(
+                'Maximum number of stored reports to keep per crawled URL; the oldest are deleted past that. Set to 0 to keep every report forever.'
+            )
+            ->end();
+
         $children->booleanNode('allow_private_network')
             ->defaultFalse()
             ->info(
@@ -95,6 +103,7 @@ final class LinkCheckerBundle extends AbstractBundle
      *     check_external: bool,
      *     exclude_patterns: list<string>,
      *     storage_dir: string|null,
+     *     storage_max_reports: int,
      *     allow_private_network: bool,
      *     request_delay_ms: int,
      *     respect_robots_txt: bool,
@@ -112,6 +121,7 @@ final class LinkCheckerBundle extends AbstractBundle
             ->set('link_checker.check_external', $config['check_external'])
             ->set('link_checker.exclude_patterns', $config['exclude_patterns'])
             ->set('link_checker.storage_dir', $config['storage_dir'])
+            ->set('link_checker.storage_max_reports', $config['storage_max_reports'])
             ->set('link_checker.allow_private_network', $config['allow_private_network'])
             ->set('link_checker.request_delay_ms', $config['request_delay_ms'])
             ->set('link_checker.respect_robots_txt', $config['respect_robots_txt']);

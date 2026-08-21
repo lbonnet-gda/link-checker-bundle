@@ -46,6 +46,7 @@ final class LinkCheckerBundleTest extends TestCase
             '%kernel.project_dir%/var/link_checker',
             $container->getParameter('link_checker.storage_dir')
         );
+        $this->assertSame(30, $container->getParameter('link_checker.storage_max_reports'));
         $this->assertFalse($container->getParameter('link_checker.allow_private_network'));
         $this->assertSame(200, $container->getParameter('link_checker.request_delay_ms'));
         $this->assertTrue($container->getParameter('link_checker.respect_robots_txt'));
@@ -107,6 +108,7 @@ final class LinkCheckerBundleTest extends TestCase
                 'user_agent' => 'CustomBot/2.0',
                 'check_external' => false,
                 'storage_dir' => '/custom/storage/path',
+                'storage_max_reports' => 10,
                 'exclude_patterns' => [
                     '#/admin#',
                     '#/logout#',
@@ -124,6 +126,7 @@ final class LinkCheckerBundleTest extends TestCase
         $this->assertFalse($container->getParameter('link_checker.check_external'));
         $this->assertSame(['#/admin#', '#/logout#'], $container->getParameter('link_checker.exclude_patterns'));
         $this->assertSame('/custom/storage/path', $container->getParameter('link_checker.storage_dir'));
+        $this->assertSame(10, $container->getParameter('link_checker.storage_max_reports'));
         $this->assertFalse($container->getParameter('link_checker.respect_robots_txt'));
 
         $this->assertTrue($container->hasDefinition(HtmlLinkExtractor::class));

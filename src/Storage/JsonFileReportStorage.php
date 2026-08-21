@@ -12,6 +12,7 @@ final class JsonFileReportStorage implements ReportStorageInterface
 {
     public function __construct(
         private readonly string $storageDirectory,
+        private readonly int $maxReports = 0,
     ) {
     }
 
@@ -30,7 +31,7 @@ final class JsonFileReportStorage implements ReportStorageInterface
         $filename = sprintf(
             'report-%s-%s-%s.json',
             date('Y-m-d_H-i-s'),
-            substr(md5($report->startUrl), 0, 8),
+            self::hash($report->startUrl),
             uniqid('', true)
         );
 
@@ -68,6 +69,35 @@ final class JsonFileReportStorage implements ReportStorageInterface
             throw new RuntimeException(sprintf('Could not write report file "%s".', $filePath));
         }
 
+        $this->rotate($report->startUrl);
+
         return $filePath;
+    }
+
+    private function rotate(string $startUrl): void
+    {
+        if ($this->maxReports <= 0) {
+            return;
+        }
+
+        $files = glob(
+            sprintf(
+                '%s/report-*-%s-*.json',
+                rtrim($this->storageDirectory, '/'),
+                self::hash($startUrl)
+            )
+        ) ?: [];
+
+        sort($files);
+
+        $excess = count($files) - $this->maxReports;
+        for ($i = 0; $i < $excess; $i++) {
+            @unlink($files[$i]);
+        }
+    }
+
+    private static function hash(string $startUrl): string
+    {
+        return substr(md5($startUrl), 0, 8);
     }
 }

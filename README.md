@@ -37,6 +37,7 @@ link_checker:
     user_agent: 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)' # Sent as the User-Agent header; identify your crawler honestly, don't spoof a browser UA
     check_external: true # Check status of outbound links
     storage_dir: '%kernel.project_dir%/var/link_checker' # Directory for JSON audit reports
+    storage_max_reports: 30 # Reports kept per crawled URL before the oldest are deleted (0 = unlimited)
     allow_private_network: false # Allow requests to private/loopback/link-local IPs
     request_delay_ms: 200 # Minimum delay between consecutive requests to a host other than the one being crawled
     respect_robots_txt: true # Honor the crawled site's robots.txt when following internal links
@@ -200,6 +201,9 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
 ```
 
 To disable automatic file storage, set `storage_dir: null` in your bundle configuration.
+
+Reports are rotated per crawled URL: only the `storage_max_reports` most recent (30 by default) are kept for a given
+start URL, so a daily scheduled audit doesn't grow the storage directory forever. Set it to `0` to keep every report.
 
 ## Notes
 

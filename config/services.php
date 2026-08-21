@@ -50,5 +50,6 @@ return static function (ContainerConfigurator $container): void {
         ->arg('$defaultBaseUrl', param('link_checker.base_url'));
 
     $services->set(JsonFileReportStorage::class)
-        ->arg('$storageDirectory', param('link_checker.storage_dir'));
+        ->arg('$storageDirectory', param('link_checker.storage_dir'))
+        ->arg('$maxReports', param('link_checker.storage_max_reports'));
 };
