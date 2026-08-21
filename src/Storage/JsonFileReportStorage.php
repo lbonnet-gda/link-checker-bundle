@@ -6,6 +6,7 @@ namespace Lbonnet\LinkCheckerBundle\Storage;
 
 use DateTimeInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
+use RuntimeException;
 
 final class JsonFileReportStorage implements ReportStorageInterface
 {
@@ -16,8 +17,14 @@ final class JsonFileReportStorage implements ReportStorageInterface
 
     public function save(CrawlReport $report): string
     {
-        if (!is_dir($this->storageDirectory)) {
-            mkdir($this->storageDirectory, 0775, true);
+        if (
+            !is_dir($this->storageDirectory)
+            && !@mkdir($this->storageDirectory, 0775, true)
+            && !is_dir($this->storageDirectory)
+        ) {
+            throw new RuntimeException(
+                sprintf('Could not create report storage directory "%s".', $this->storageDirectory)
+            );
         }
 
         $filename = sprintf(
@@ -55,7 +62,11 @@ final class JsonFileReportStorage implements ReportStorageInterface
             ], $report->brokenLinks),
         ];
 
-        file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $written = file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        if ($written === false) {
+            throw new RuntimeException(sprintf('Could not write report file "%s".', $filePath));
+        }
 
         return $filePath;
     }

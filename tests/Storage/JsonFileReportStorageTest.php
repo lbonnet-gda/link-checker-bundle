@@ -9,6 +9,7 @@ use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 final class JsonFileReportStorageTest extends TestCase
@@ -25,6 +26,8 @@ final class JsonFileReportStorageTest extends TestCase
         if (is_dir($this->tempDir)) {
             array_map('unlink', glob($this->tempDir.'/*') ?: []);
             rmdir($this->tempDir);
+        } elseif (is_file($this->tempDir)) {
+            unlink($this->tempDir);
         }
     }
 
@@ -154,5 +157,16 @@ final class JsonFileReportStorageTest extends TestCase
         );
         $this->assertFileExists($firstPath);
         $this->assertFileExists($secondPath);
+    }
+
+    public function testSaveThrowsWhenStorageDirectoryCannotBeCreated(): void
+    {
+        file_put_contents($this->tempDir, 'not a directory');
+
+        $storage = new JsonFileReportStorage($this->tempDir);
+
+        $this->expectException(RuntimeException::class);
+
+        $storage->save(new CrawlReport(startUrl: 'https://example.com'));
     }
 }
