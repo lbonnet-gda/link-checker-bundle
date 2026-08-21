@@ -98,7 +98,7 @@ final class CheckLinksCommand extends Command
             if (!$io->isVerbose()) {
                 ProgressBar::setPlaceholderFormatterDefinition(
                     'truncated_url',
-                    static fn(ProgressBar $bar): string => self::truncate($bar->getMessage())
+                    static fn(ProgressBar $bar): string => self::truncate((string)$bar->getMessage())
                 );
 
                 $progressBar = $io->createProgressBar();
