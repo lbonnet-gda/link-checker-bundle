@@ -110,14 +110,21 @@ final class SiteCrawler implements CrawlerInterface
                     continue;
                 }
 
+                $effectiveUrl = $link->url;
+
                 try {
                     $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
                     $html = $response->getContent();
+
+                    $infoUrl = $response->getInfo('url');
+                    if (is_string($infoUrl) && $infoUrl !== '') {
+                        $effectiveUrl = $infoUrl;
+                    }
                 } catch (Throwable) {
                     continue;
                 }
 
-                $extracted = $this->extractor->extract($html, $link->url, $activeExcludePatterns);
+                $extracted = $this->extractor->extract($html, $effectiveUrl, $activeExcludePatterns);
 
                 foreach ($extracted as $nextLink) {
                     if (isset($visited[$this->visitedKey($nextLink->url)])) {

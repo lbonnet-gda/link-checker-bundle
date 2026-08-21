@@ -186,6 +186,36 @@ final class SiteCrawlerTest extends TestCase
         $this->assertSame(2, $report->totalChecked);
     }
 
+    public function testCrawlExtractsLinksAgainstTheUrlAfterRedirection(): void
+    {
+        $startUrl = 'https://example.com';
+        $effectiveUrl = 'https://example.com/fr';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->expects($this->once())
+            ->method('extract')
+            ->with($this->anything(), $effectiveUrl, $this->anything())
+            ->willReturn([]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturn(
+            new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8')
+        );
+
+        $httpClient = new MockHttpClient(
+            new MockResponse('<html><body>...</body></html>', ['url' => $effectiveUrl])
+        );
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            defaultMaxDepth: 1
+        );
+
+        $crawler->crawl($startUrl);
+    }
+
     public function testCrawlExemptsTheAuditedHostFromThrottling(): void
     {
         $startUrl = 'https://example.com';

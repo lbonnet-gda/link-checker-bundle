@@ -103,4 +103,14 @@ final class HtmlLinkExtractorTest extends TestCase
         $this->assertSame('https://example.com/search?q=test&page=2', $links[0]->url);
         $this->assertSame('https://example.com/blog/results?sort=asc', $links[1]->url);
     }
+
+    public function testExtractResolvesSiblingLinkAgainstADirectoryStyleBase(): void
+    {
+        $html = '<a href="sibling-page">Sibling page</a>';
+
+        $links = $this->extractor->extract($html, 'https://example.com/section/');
+
+        $this->assertCount(1, $links);
+        $this->assertSame('https://example.com/section/sibling-page', $links[0]->url);
+    }
 }
