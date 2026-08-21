@@ -258,6 +258,13 @@ could make the crawler skip a broken link instead of reporting it. On sites wher
 (pagination, sorting, tracking like `utm_*`), this can inflate the number of URLs crawled; use
 `exclude_patterns` to filter those out explicitly, e.g. `'#[?&]utm_#'` or `'#\?page=#'`.
 
+### Fragments aren't validated
+
+A link's `#fragment` (e.g. `/page#section`) is stripped before checking: the bundle verifies that `/page` itself
+resolves, not that an element with `id="section"` (or `name="section"`) actually exists on it. A link to a genuinely
+missing anchor is therefore reported as OK. Validating fragments would mean parsing the DOM of every linked page looking
+for a matching `id`/`name`, which the bundle doesn't do today.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
