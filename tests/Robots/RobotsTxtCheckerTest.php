@@ -96,6 +96,43 @@ final class RobotsTxtCheckerTest extends TestCase
         $this->assertTrue($checker->isAllowed('https://example.com/late'));
     }
 
+    public function testCrawlDelayIsNullWhenNotSpecified(): void
+    {
+        $robotsTxt = "User-agent: *\nDisallow: /admin\n";
+        $client = new MockHttpClient(static fn() => new MockResponse($robotsTxt));
+        $checker = new RobotsTxtChecker($client, 'TestBot/1.0');
+
+        $this->assertNull($checker->crawlDelay('https://example.com/'));
+    }
+
+    public function testCrawlDelayIsNullWhenDisabled(): void
+    {
+        $client = new MockHttpClient(static function (): MockResponse {
+            throw new LogicException('robots.txt should not be fetched when disabled');
+        });
+        $checker = new RobotsTxtChecker($client, 'TestBot/1.0', enabled: false);
+
+        $this->assertNull($checker->crawlDelay('https://example.com/'));
+    }
+
+    public function testParsesCrawlDelayForWildcardGroup(): void
+    {
+        $robotsTxt = "User-agent: *\nCrawl-delay: 10\n";
+        $client = new MockHttpClient(static fn() => new MockResponse($robotsTxt));
+        $checker = new RobotsTxtChecker($client, 'TestBot/1.0');
+
+        $this->assertSame(10.0, $checker->crawlDelay('https://example.com/'));
+    }
+
+    public function testUserAgentSpecificCrawlDelayOverridesWildcard(): void
+    {
+        $robotsTxt = "User-agent: *\nCrawl-delay: 10\nUser-agent: TestBot\nCrawl-delay: 2\n";
+        $client = new MockHttpClient(static fn() => new MockResponse($robotsTxt));
+        $checker = new RobotsTxtChecker($client, 'TestBot/1.0');
+
+        $this->assertSame(2.0, $checker->crawlDelay('https://example.com/'));
+    }
+
     public function testFetchesRobotsTxtOnlyOncePerHost(): void
     {
         $calls = 0;

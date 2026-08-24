@@ -17,6 +17,9 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
     /** @var array<string, list<array{pattern: string, allow: bool}>> host => applicable rules */
     private array $rulesByHost = [];
 
+    /** @var array<string, float|null> host => Crawl-delay in seconds requested for our user agent */
+    private array $crawlDelayByHost = [];
+
     /** @var array<string, true> hosts whose robots.txt has already been fetched (successfully or not) */
     private array $fetchedHosts = [];
 
@@ -49,6 +52,22 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
         return $this->matchRules($this->rulesByHost[$host] ?? [], $path);
     }
 
+    public function crawlDelay(string $url): ?float
+    {
+        if (!$this->enabled) {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return null;
+        }
+
+        $this->ensureLoaded($url, $host);
+
+        return $this->crawlDelayByHost[$host] ?? null;
+    }
+
     private function ensureLoaded(string $url, string $host): void
     {
         if (isset($this->fetchedHosts[$host])) {
@@ -57,6 +76,7 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
 
         $this->fetchedHosts[$host] = true;
         $this->rulesByHost[$host] = [];
+        $this->crawlDelayByHost[$host] = null;
 
         $scheme = parse_url($url, PHP_URL_SCHEME) ?: 'https';
         $robotsUrl = sprintf('%s://%s/robots.txt', $scheme, $host);
@@ -72,27 +92,36 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
             return;
         }
 
-        $this->rulesByHost[$host] = $this->parse($content);
+        $group = $this->parse($content);
+        $this->rulesByHost[$host] = $group['rules'];
+        $this->crawlDelayByHost[$host] = $group['crawlDelay'];
     }
 
     /**
-     * @return list<array{pattern: string, allow: bool}>
+     * @return array{rules: list<array{pattern: string, allow: bool}>, crawlDelay: float|null}
      */
     private function parse(string $content): array
     {
-        /** @var array<string, list<array{pattern: string, allow: bool}>> $groups */
+        /** @var array<string, array{rules: list<array{pattern: string, allow: bool}>, crawlDelay: float|null}> $groups */
         $groups = [];
         $agents = [];
         $rules = [];
+        $crawlDelay = null;
         $collectingAgents = true;
 
-        $commit = function () use (&$groups, &$agents, &$rules): void {
+        $commit = function () use (&$groups, &$agents, &$rules, &$crawlDelay): void {
             // @phpstan-ignore-next-line foreach.emptyArray
             foreach ($agents as $agent) {
-                $groups[$agent] = array_merge($groups[$agent] ?? [], $rules);
+                $existing = $groups[$agent] ?? ['rules' => [], 'crawlDelay' => null];
+                $groups[$agent] = [
+                    'rules' => array_merge($existing['rules'], $rules),
+                    // @phpstan-ignore-next-line nullCoalesce.variable
+                    'crawlDelay' => $crawlDelay ?? $existing['crawlDelay'],
+                ];
             }
             $agents = [];
             $rules = [];
+            $crawlDelay = null;
         };
 
         foreach (preg_split('/\r\n|\r|\n/', $content) ?: [] as $line) {
@@ -113,6 +142,15 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
                 continue;
             }
 
+            if ($field === 'crawl-delay') {
+                $collectingAgents = false;
+
+                if (is_numeric($value)) {
+                    $crawlDelay = (float)$value;
+                }
+                continue;
+            }
+
             if (!in_array($field, ['allow', 'disallow'], true)) {
                 continue;
             }
@@ -129,13 +167,13 @@ final class RobotsTxtChecker implements RobotsTxtCheckerInterface
 
         $ourUserAgent = strtolower($this->userAgent);
 
-        foreach ($groups as $agent => $agentRules) {
+        foreach ($groups as $agent => $group) {
             if ($agent !== '' && $agent !== '*' && str_contains($ourUserAgent, $agent)) {
-                return $agentRules;
+                return $group;
             }
         }
 
-        return $groups['*'] ?? [];
+        return $groups['*'] ?? ['rules' => [], 'crawlDelay' => null];
     }
 
     /**
