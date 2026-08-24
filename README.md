@@ -1,5 +1,10 @@
 # LinkCheckerBundle
 
+[![CI](https://github.com/lbonnet-gda/link-checker-bundle/actions/workflows/ci.yaml/badge.svg)](https://github.com/lbonnet-gda/link-checker-bundle/actions/workflows/ci.yaml)
+[![Latest Version](https://img.shields.io/packagist/v/lbonnet/link-checker-bundle.svg)](https://packagist.org/packages/lbonnet/link-checker-bundle)
+[![PHP Version](https://img.shields.io/packagist/php-v/lbonnet/link-checker-bundle.svg)](https://packagist.org/packages/lbonnet/link-checker-bundle)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A Symfony bundle to crawl a site and detect broken internal and external links.
 
 Designed to run **outside the request/response cycle** — as a console command, a scheduled cron, or an async Messenger
