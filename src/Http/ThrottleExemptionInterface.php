@@ -7,9 +7,11 @@ namespace Lbonnet\LinkCheckerBundle\Http;
 interface ThrottleExemptionInterface
 {
     /**
-     * Exempts the given host from the configured request delay until cleared (pass null to
-     * clear it). Lets the crawler stay fast on the site it's actually auditing while still
-     * throttling requests to every other host it happens to check or fetch.
+     * Overrides the throttling delay for a single host, replacing the globally configured
+     * delay for requests to it until cleared (pass host: null to clear it). Lets the crawler
+     * honor the audited site's own robots.txt Crawl-delay for that host — or stay fully
+     * unthrottled against it (the default, delayMs: 0) when it doesn't specify one — while
+     * still throttling requests to every other host it happens to check or fetch.
      */
-    public function setExemptHost(?string $host): void;
+    public function setHostDelay(?string $host, int $delayMs = 0): void;
 }

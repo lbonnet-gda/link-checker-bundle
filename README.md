@@ -240,15 +240,17 @@ Because `check_external: true` is the default, an audit routinely sends requests
 settings help keep that well-behaved:
 
 - **`request_delay_ms`** (`200` by default) enforces a minimum delay between consecutive requests to a host, across both
-  link checks and page fetches. The host you're crawling is always exempt — it's the one site you actually control and
-  want audited quickly, not throttled against itself — so this setting only ever slows down requests to *other* hosts,
+  link checks and page fetches. The host you're crawling is unthrottled against itself by default — it's the one site
+  you actually control and want audited quickly — so this setting only ever slows down requests to *other* hosts,
   chiefly the external links it finds. Raise it if a crawl is likely to hammer one particular third-party domain with
   many links; set it to `0` to disable throttling everywhere, including external hosts, if you're confident that's fine
   for your use case.
 - **`respect_robots_txt`** (on by default) fetches the crawled site's `robots.txt` once per host and stops the crawler
   from following or checking further **internal** links under a disallowed path. It doesn't affect the URL you
   explicitly pass as the crawl's starting point, and it doesn't apply to external links, which only ever get a single
-  status check rather than being recursively crawled.
+  status check rather than being recursively crawled. If that same `robots.txt` publishes a `Crawl-delay` for our user
+  agent, it overrides `request_delay_ms` for the audited host specifically — the site owner's explicit request takes
+  precedence over the "unthrottled against itself" default.
 
 ### Query strings and crawl size
 

@@ -76,7 +76,11 @@ final class SiteCrawler implements CrawlerInterface
 
         if (is_string($startHost) && $this->httpClient instanceof ThrottleExemptionInterface) {
             $throttle = $this->httpClient;
-            $throttle->setExemptHost($startHost);
+
+            $crawlDelay = $this->robotsTxtChecker?->crawlDelay($startUrl);
+            $delayMs = $crawlDelay !== null ? (int)round($crawlDelay * 1000) : 0;
+
+            $throttle->setHostDelay($startHost, $delayMs);
         }
 
         try {
@@ -155,7 +159,7 @@ final class SiteCrawler implements CrawlerInterface
                 }
             }
         } finally {
-            $throttle?->setExemptHost(null);
+            $throttle?->setHostDelay(null);
         }
 
         $totalDuration = microtime(true) - $startTime;

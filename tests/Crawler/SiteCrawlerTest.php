@@ -267,16 +267,16 @@ final class SiteCrawlerTest extends TestCase
 
         $httpClient = new class(new MockHttpClient(new MockResponse('<html></html>')))
             implements HttpClientInterface, ThrottleExemptionInterface {
-            /** @var list<?string> */
-            public array $exemptHostCalls = [];
+            /** @var list<array{0: ?string, 1: int}> */
+            public array $hostDelayCalls = [];
 
             public function __construct(private HttpClientInterface $inner)
             {
             }
 
-            public function setExemptHost(?string $host): void
+            public function setHostDelay(?string $host, int $delayMs = 0): void
             {
-                $this->exemptHostCalls[] = $host;
+                $this->hostDelayCalls[] = [$host, $delayMs];
             }
 
             public function request(string $method, string $url, array $options = []): ResponseInterface
@@ -308,6 +308,68 @@ final class SiteCrawlerTest extends TestCase
 
         $crawler->crawl($startUrl);
 
-        $this->assertSame(['example.com', null], $httpClient->exemptHostCalls);
+        $this->assertSame([['example.com', 0], [null, 0]], $httpClient->hostDelayCalls);
+    }
+
+    public function testCrawlHonorsTheAuditedHostsRobotsTxtCrawlDelay(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturn([]);
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturn(
+            new CheckResult($startUrl, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8')
+        );
+
+        $robotsTxtChecker = $this->createMock(RobotsTxtCheckerInterface::class);
+        $robotsTxtChecker->method('crawlDelay')->with($startUrl)->willReturn(2.5);
+
+        $httpClient = new class(new MockHttpClient(new MockResponse('<html></html>')))
+            implements HttpClientInterface, ThrottleExemptionInterface {
+            /** @var list<array{0: ?string, 1: int}> */
+            public array $hostDelayCalls = [];
+
+            public function __construct(private HttpClientInterface $inner)
+            {
+            }
+
+            public function setHostDelay(?string $host, int $delayMs = 0): void
+            {
+                $this->hostDelayCalls[] = [$host, $delayMs];
+            }
+
+            public function request(string $method, string $url, array $options = []): ResponseInterface
+            {
+                return $this->inner->request($method, $url, $options);
+            }
+
+            public function stream(
+                ResponseInterface|iterable $responses,
+                ?float $timeout = null
+            ): ResponseStreamInterface {
+                return $this->inner->stream($responses, $timeout);
+            }
+
+            public function withOptions(array $options): static
+            {
+                $clone = clone $this;
+                $clone->inner = $this->inner->withOptions($options);
+
+                return $clone;
+            }
+        };
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            robotsTxtChecker: $robotsTxtChecker,
+        );
+
+        $crawler->crawl($startUrl);
+
+        $this->assertSame([['example.com', 2500], [null, 0]], $httpClient->hostDelayCalls);
     }
 }

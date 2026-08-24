@@ -51,7 +51,7 @@ final class ThrottledHttpClientTest extends TestCase
     public function testDoesNotDelayTheExemptedHost(): void
     {
         $client = new ThrottledHttpClient(new MockHttpClient(static fn() => new MockResponse()), 200);
-        $client->setExemptHost('example.com');
+        $client->setHostDelay('example.com');
 
         $start = microtime(true);
         $client->request(Request::METHOD_GET, 'https://example.com/a');
@@ -64,7 +64,7 @@ final class ThrottledHttpClientTest extends TestCase
     public function testStillDelaysOtherHostsWhileOneIsExempted(): void
     {
         $client = new ThrottledHttpClient(new MockHttpClient(static fn() => new MockResponse()), 100);
-        $client->setExemptHost('example.com');
+        $client->setHostDelay('example.com');
 
         $start = microtime(true);
         $client->request(Request::METHOD_GET, 'https://other-example.com/a');
@@ -77,14 +77,41 @@ final class ThrottledHttpClientTest extends TestCase
     public function testClearingTheExemptionResumesThrottlingThatHost(): void
     {
         $client = new ThrottledHttpClient(new MockHttpClient(static fn() => new MockResponse()), 100);
-        $client->setExemptHost('example.com');
+        $client->setHostDelay('example.com');
         $client->request(Request::METHOD_GET, 'https://example.com/a');
-        $client->setExemptHost(null);
+        $client->setHostDelay(null);
 
         $start = microtime(true);
         $client->request(Request::METHOD_GET, 'https://example.com/b');
         $elapsedMs = (microtime(true) - $start) * 1000;
 
         $this->assertGreaterThanOrEqual(90, $elapsedMs);
+    }
+
+    public function testHostDelayOverrideAppliesEvenBelowTheGlobalDelay(): void
+    {
+        $client = new ThrottledHttpClient(new MockHttpClient(static fn() => new MockResponse()), 50);
+        $client->setHostDelay('example.com', 200);
+
+        $start = microtime(true);
+        $client->request(Request::METHOD_GET, 'https://example.com/a');
+        $client->request(Request::METHOD_GET, 'https://example.com/b');
+        $elapsedMs = (microtime(true) - $start) * 1000;
+
+        $this->assertGreaterThanOrEqual(190, $elapsedMs);
+    }
+
+    public function testHostDelayOverrideAppliesEvenAboveTheGlobalDelay(): void
+    {
+        $client = new ThrottledHttpClient(new MockHttpClient(static fn() => new MockResponse()), 200);
+        $client->setHostDelay('example.com', 50);
+
+        $start = microtime(true);
+        $client->request(Request::METHOD_GET, 'https://example.com/a');
+        $client->request(Request::METHOD_GET, 'https://example.com/b');
+        $elapsedMs = (microtime(true) - $start) * 1000;
+
+        $this->assertGreaterThanOrEqual(40, $elapsedMs);
+        $this->assertLessThan(150, $elapsedMs);
     }
 }

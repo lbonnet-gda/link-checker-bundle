@@ -20,7 +20,8 @@ final class ThrottledHttpClient implements HttpClientInterface, ResetInterface, 
 {
     private HttpClientInterface $client;
     private int $delayMs;
-    private ?string $exemptHost = null;
+    private ?string $overrideHost = null;
+    private int $overrideDelayMs = 0;
 
     /** @var array<string, float> host => microtime() of the last request start */
     private array $lastRequestAt = [];
@@ -31,9 +32,10 @@ final class ThrottledHttpClient implements HttpClientInterface, ResetInterface, 
         $this->delayMs = $delayMs;
     }
 
-    public function setExemptHost(?string $host): void
+    public function setHostDelay(?string $host, int $delayMs = 0): void
     {
-        $this->exemptHost = $host !== null ? strtolower($host) : null;
+        $this->overrideHost = $host !== null ? strtolower($host) : null;
+        $this->overrideDelayMs = $delayMs;
     }
 
     /**
@@ -79,9 +81,11 @@ final class ThrottledHttpClient implements HttpClientInterface, ResetInterface, 
             return;
         }
 
-        if ($this->delayMs > 0 && $host !== $this->exemptHost) {
+        $delayMs = $host === $this->overrideHost ? $this->overrideDelayMs : $this->delayMs;
+
+        if ($delayMs > 0) {
             $elapsedMs = (microtime(true) - ($this->lastRequestAt[$host] ?? 0.0)) * 1000;
-            $remainingMs = $this->delayMs - $elapsedMs;
+            $remainingMs = $delayMs - $elapsedMs;
 
             if ($remainingMs > 0) {
                 usleep((int)round($remainingMs * 1000));
