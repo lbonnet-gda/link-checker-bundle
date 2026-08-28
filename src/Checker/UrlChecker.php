@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Checker;
 
+use Lbonnet\LinkCheckerBundle\Model\BotProvider;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,16 +43,16 @@ final class UrlChecker implements UrlCheckerInterface
      * response header to inspect and a substring to look for in its value (an empty
      * needle means "header present" is signature enough).
      *
-     * @var list<array{provider: string, header: string, needle: string}>
+     * @var list<array{provider: BotProvider, header: string, needle: string}>
      */
     private const BOT_PROTECTION_SIGNATURES = [
-        ['provider' => 'Akamai', 'header' => 'server-timing', 'needle' => 'ak_p'],
-        ['provider' => 'Akamai', 'header' => 'server', 'needle' => 'akamaighost'],
-        ['provider' => 'Cloudflare', 'header' => 'cf-ray', 'needle' => ''],
-        ['provider' => 'Cloudflare', 'header' => 'cf-mitigated', 'needle' => ''],
-        ['provider' => 'Sucuri', 'header' => 'x-sucuri-id', 'needle' => ''],
-        ['provider' => 'Incapsula', 'header' => 'x-iinfo', 'needle' => ''],
-        ['provider' => 'DataDome', 'header' => 'x-datadome', 'needle' => ''],
+        ['provider' => BotProvider::Akamai, 'header' => 'server-timing', 'needle' => 'ak_p'],
+        ['provider' => BotProvider::Akamai, 'header' => 'server', 'needle' => 'akamaighost'],
+        ['provider' => BotProvider::Cloudflare, 'header' => 'cf-ray', 'needle' => ''],
+        ['provider' => BotProvider::Cloudflare, 'header' => 'cf-mitigated', 'needle' => ''],
+        ['provider' => BotProvider::Sucuri, 'header' => 'x-sucuri-id', 'needle' => ''],
+        ['provider' => BotProvider::Incapsula, 'header' => 'x-iinfo', 'needle' => ''],
+        ['provider' => BotProvider::DataDome, 'header' => 'x-datadome', 'needle' => ''],
     ];
 
     public const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)';
@@ -129,7 +130,7 @@ final class UrlChecker implements UrlCheckerInterface
     /**
      * @param array<string, list<string>> $headers response headers, lower-cased keys
      */
-    private function detectBotProtection(int $statusCode, array $headers): ?string
+    private function detectBotProtection(int $statusCode, array $headers): ?BotProvider
     {
         if (!in_array($statusCode, self::BOT_PROTECTION_STATUS_CODES, true)) {
             return null;
