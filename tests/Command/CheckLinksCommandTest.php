@@ -6,6 +6,7 @@ namespace Lbonnet\LinkCheckerBundle\Tests\Command;
 
 use Lbonnet\LinkCheckerBundle\Command\CheckLinksCommand;
 use Lbonnet\LinkCheckerBundle\Crawler\CrawlerInterface;
+use Lbonnet\LinkCheckerBundle\Model\BotProvider;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
@@ -108,7 +109,7 @@ final class CheckLinksCommandTest extends TestCase
                             Response::HTTP_FORBIDDEN,
                             0.1,
                             likelyBlocked: true,
-                            blockedBy: 'Akamai',
+                            blockedBy: BotProvider::Akamai,
                         ),
                     ],
                 ],

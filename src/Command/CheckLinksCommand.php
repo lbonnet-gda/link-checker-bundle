@@ -184,7 +184,11 @@ final class CheckLinksCommand extends Command
 
             if ($result->statusCode !== null) {
                 if ($result->likelyBlocked) {
-                    $status = sprintf('<fg=yellow>%d (blocked by %s?)</>', $result->statusCode, $result->blockedBy);
+                    $status = sprintf(
+                        '<fg=yellow>%d (blocked by %s?)</>',
+                        $result->statusCode,
+                        $result->blockedBy?->value
+                    );
                 } else {
                     $status = sprintf('<fg=red>%d</>', $result->statusCode);
                 }

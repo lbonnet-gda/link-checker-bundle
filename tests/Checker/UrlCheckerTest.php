@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lbonnet\LinkCheckerBundle\Tests\Checker;
 
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
+use Lbonnet\LinkCheckerBundle\Model\BotProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -101,7 +102,7 @@ final class UrlCheckerTest extends TestCase
         $this->assertTrue($result->isBroken());
         $this->assertSame(Response::HTTP_FORBIDDEN, $result->statusCode);
         $this->assertTrue($result->likelyBlocked);
-        $this->assertSame('Akamai', $result->blockedBy);
+        $this->assertSame(BotProvider::Akamai, $result->blockedBy);
     }
 
     public function testCheckDoesNotFlagOrdinaryForbiddenAsBlocked(): void

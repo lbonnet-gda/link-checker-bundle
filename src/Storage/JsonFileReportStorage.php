@@ -59,7 +59,7 @@ final class JsonFileReportStorage implements ReportStorageInterface
                 'errorMessage' => $item['result']->errorMessage,
                 'redirectUrl' => $item['result']->redirectUrl,
                 'likelyBlocked' => $item['result']->likelyBlocked,
-                'blockedBy' => $item['result']->blockedBy,
+                'blockedBy' => $item['result']->blockedBy?->value,
             ], $report->brokenLinks),
         ];
 

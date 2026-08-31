@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Tests\Storage;
 
+use Lbonnet\LinkCheckerBundle\Model\BotProvider;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
@@ -51,7 +52,7 @@ final class JsonFileReportStorageTest extends TestCase
                         Response::HTTP_FORBIDDEN,
                         0.15,
                         likelyBlocked: true,
-                        blockedBy: 'Akamai',
+                        blockedBy: BotProvider::Akamai,
                     ),
                 ],
             ],
