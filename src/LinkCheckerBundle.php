@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle;
 
+use Lbonnet\CrawlerToolkit\Http\ThrottledHttpClient;
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
-use Lbonnet\LinkCheckerBundle\Http\ThrottledHttpClient;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use Lbonnet\LinkCheckerBundle\Storage\ReportStorageInterface;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;

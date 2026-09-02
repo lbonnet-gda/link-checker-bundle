@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Tests\Crawler;
 
+use Lbonnet\CrawlerToolkit\Http\ThrottleExemptionInterface;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
-use Lbonnet\LinkCheckerBundle\Http\ThrottleExemptionInterface;
 use Lbonnet\LinkCheckerBundle\Model\CheckResult;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
-use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -203,7 +203,7 @@ final class SiteCrawlerTest extends TestCase
         );
 
         $httpClient = new MockHttpClient(
-            new MockResponse('<html><body>...</body></html>', ['url' => $effectiveUrl])
+            new MockResponse('<html><body>...</body></html>', ['url' => $effectiveUrl, 'redirect_count' => 1])
         );
 
         $crawler = new SiteCrawler(

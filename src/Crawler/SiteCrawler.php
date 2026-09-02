@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Crawler;
 
+use Lbonnet\CrawlerToolkit\Http\BoundedContentReader;
+use Lbonnet\CrawlerToolkit\Http\EffectiveUrlResolver;
+use Lbonnet\CrawlerToolkit\Http\ThrottleExemptionInterface;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
+use Lbonnet\CrawlerToolkit\Url\UrlNormalizer;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Event\CrawlCompletedEvent;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
-use Lbonnet\LinkCheckerBundle\Http\BoundedContentReader;
-use Lbonnet\LinkCheckerBundle\Http\ThrottleExemptionInterface;
 use Lbonnet\LinkCheckerBundle\Model\CrawlReport;
 use Lbonnet\LinkCheckerBundle\Model\ExtractedLink;
-use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -89,7 +91,7 @@ final class SiteCrawler implements CrawlerInterface
                 $link = $item['link'];
                 $depth = $item['depth'];
 
-                $visitedKey = $this->visitedKey($link->url);
+                $visitedKey = UrlNormalizer::normalizeForDedup($link->url);
 
                 if (isset($visited[$visitedKey])) {
                     continue;
@@ -123,16 +125,10 @@ final class SiteCrawler implements CrawlerInterface
                     continue;
                 }
 
-                $effectiveUrl = $link->url;
-
                 try {
                     $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
                     $html = BoundedContentReader::read($this->httpClient, $response, self::MAX_HTML_LENGTH);
-
-                    $infoUrl = $response->getInfo('url');
-                    if (is_string($infoUrl) && $infoUrl !== '') {
-                        $effectiveUrl = $infoUrl;
-                    }
+                    $effectiveUrl = EffectiveUrlResolver::resolve($response, $link->url);
                 } catch (Throwable) {
                     continue;
                 }
@@ -140,7 +136,7 @@ final class SiteCrawler implements CrawlerInterface
                 $extracted = $this->extractor->extract($html, $effectiveUrl, $activeExcludePatterns);
 
                 foreach ($extracted as $nextLink) {
-                    if (isset($visited[$this->visitedKey($nextLink->url)])) {
+                    if (isset($visited[UrlNormalizer::normalizeForDedup($nextLink->url)])) {
                         continue;
                     }
 
@@ -180,14 +176,5 @@ final class SiteCrawler implements CrawlerInterface
         }
 
         return $report;
-    }
-
-    /**
-     * Normalizes the scheme to avoid crawling the same page twice just because it's
-     * reachable via both http:// and https://. The URL actually requested is left untouched.
-     */
-    private function visitedKey(string $url): string
-    {
-        return preg_replace('#^http://#i', 'https://', $url, 1) ?? $url;
     }
 }

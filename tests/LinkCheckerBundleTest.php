@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Tests;
 
+use Lbonnet\CrawlerToolkit\Http\ThrottledHttpClient;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtChecker;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Command\CheckLinksCommand;
@@ -11,11 +14,8 @@ use Lbonnet\LinkCheckerBundle\Crawler\CrawlerInterface;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Lbonnet\LinkCheckerBundle\Extractor\HtmlLinkExtractor;
 use Lbonnet\LinkCheckerBundle\Extractor\LinkExtractorInterface;
-use Lbonnet\LinkCheckerBundle\Http\ThrottledHttpClient;
 use Lbonnet\LinkCheckerBundle\LinkCheckerBundle;
 use Lbonnet\LinkCheckerBundle\MessageHandler\CheckLinksMessageHandler;
-use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtChecker;
-use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use Lbonnet\LinkCheckerBundle\Storage\ReportStorageInterface;
 use PHPUnit\Framework\TestCase;

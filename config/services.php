@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtChecker;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Checker\UrlChecker;
 use Lbonnet\LinkCheckerBundle\Command\CheckLinksCommand;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
 use Lbonnet\LinkCheckerBundle\MessageHandler\CheckLinksMessageHandler;
-use Lbonnet\LinkCheckerBundle\Robots\RobotsTxtChecker;
 use Lbonnet\LinkCheckerBundle\Storage\JsonFileReportStorage;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
@@ -25,7 +26,6 @@ return static function (ContainerConfigurator $container): void {
             '../src/Model/',
             '../src/Event/',
             '../src/Message/',
-            '../src/Http/BoundedContentReader.php',
         ]);
 
     $services->set(UrlChecker::class)
@@ -43,6 +43,8 @@ return static function (ContainerConfigurator $container): void {
         ->arg('$httpClient', service('link_checker.http_client'))
         ->arg('$userAgent', param('link_checker.user_agent'))
         ->arg('$enabled', param('link_checker.respect_robots_txt'));
+
+    $services->alias(RobotsTxtCheckerInterface::class, RobotsTxtChecker::class);
 
     $services->set(CheckLinksCommand::class)
         ->arg('$defaultBaseUrl', param('link_checker.base_url'));
