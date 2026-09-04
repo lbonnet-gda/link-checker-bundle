@@ -13,7 +13,7 @@ worker — so it fits both CI pipelines and continuous monitoring of a live site
 ## Requirements
 
 - PHP >= 8.1
-- Symfony 6.4, 7.4, or 8.1
+- Symfony 6.4, 7.x, or 8.x
 
 ## Installation
 
