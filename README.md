@@ -272,6 +272,11 @@ resolves, not that an element with `id="section"` (or `name="section"`) actually
 missing anchor is therefore reported as OK. Validating fragments would mean parsing the DOM of every linked page looking
 for a matching `id`/`name`, which the bundle doesn't do today.
 
+## Security
+
+To report a vulnerability, please don't open a public issue — see [SECURITY.md](SECURITY.md) for how to report it
+privately.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
