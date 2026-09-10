@@ -6,9 +6,6 @@ namespace Lbonnet\LinkCheckerBundle\Model;
 
 final class CheckResult
 {
-    private const REACHABLE_RANGE_START = 200;
-    private const REACHABLE_RANGE_END = 400;
-
     public function __construct(
         public readonly string $url,
         public readonly ?int $statusCode = null,
@@ -24,8 +21,8 @@ final class CheckResult
     public function isReachable(): bool
     {
         return $this->statusCode !== null
-            && $this->statusCode >= self::REACHABLE_RANGE_START
-            && $this->statusCode < self::REACHABLE_RANGE_END;
+            && $this->statusCode >= 200
+            && $this->statusCode < 400;
     }
 
     public function isBroken(): bool
