@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Lbonnet\LinkCheckerBundle\Model;
 
-use Symfony\Component\HttpFoundation\Response;
-
 final class CheckResult
 {
+    private const REACHABLE_RANGE_START = 200;
+    private const REACHABLE_RANGE_END = 400;
+
     public function __construct(
         public readonly string $url,
         public readonly ?int $statusCode = null,
@@ -20,15 +21,15 @@ final class CheckResult
     ) {
     }
 
-    public function isSuccessful(): bool
+    public function isReachable(): bool
     {
         return $this->statusCode !== null
-            && $this->statusCode >= Response::HTTP_OK
-            && $this->statusCode < Response::HTTP_BAD_REQUEST;
+            && $this->statusCode >= self::REACHABLE_RANGE_START
+            && $this->statusCode < self::REACHABLE_RANGE_END;
     }
 
     public function isBroken(): bool
     {
-        return !$this->isSuccessful();
+        return !$this->isReachable();
     }
 }
