@@ -6,7 +6,7 @@ namespace Lbonnet\LinkCheckerBundle\Crawler;
 
 use Lbonnet\CrawlerToolkit\Http\BoundedContentReader;
 use Lbonnet\CrawlerToolkit\Http\EffectiveUrlResolver;
-use Lbonnet\CrawlerToolkit\Http\ThrottleExemptionInterface;
+use Lbonnet\CrawlerToolkit\Http\SiteThrottleExemption;
 use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\CrawlerToolkit\Url\UrlNormalizer;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
@@ -73,17 +73,8 @@ final class SiteCrawler implements CrawlerInterface
             ],
         ];
 
-        $startHost = parse_url($startUrl, PHP_URL_HOST);
-        $throttle = null;
-
-        if (is_string($startHost) && $this->httpClient instanceof ThrottleExemptionInterface) {
-            $throttle = $this->httpClient;
-
-            $crawlDelay = $this->robotsTxtChecker?->crawlDelay($startUrl);
-            $delayMs = $crawlDelay !== null ? (int)round($crawlDelay * 1000) : 0;
-
-            $throttle->setHostDelay($startHost, $delayMs);
-        }
+        $startKey = UrlNormalizer::normalizeForDedup($startUrl);
+        $throttleExemption = SiteThrottleExemption::begin($this->httpClient, $startUrl, $this->robotsTxtChecker);
 
         try {
             while (!empty($queue)) {
@@ -133,6 +124,10 @@ final class SiteCrawler implements CrawlerInterface
                     continue;
                 }
 
+                if ($visitedKey === $startKey) {
+                    $throttleExemption->moveTo($effectiveUrl);
+                }
+
                 $extracted = $this->extractor->extract($html, $effectiveUrl, $activeExcludePatterns);
 
                 foreach ($extracted as $nextLink) {
@@ -155,7 +150,7 @@ final class SiteCrawler implements CrawlerInterface
                 }
             }
         } finally {
-            $throttle?->setHostDelay(null);
+            $throttleExemption->end();
         }
 
         $totalDuration = microtime(true) - $startTime;
