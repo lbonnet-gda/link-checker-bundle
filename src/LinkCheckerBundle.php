@@ -97,7 +97,7 @@ final class LinkCheckerBundle extends AbstractBundle
         $children->booleanNode('respect_robots_txt')
             ->defaultTrue()
             ->info(
-                'Fetch and honor the crawled site\'s robots.txt: matching Disallow rules stop the crawler from following/checking further internal links under that path. Does not affect single-status checks of external links, and does not apply to the URL you explicitly start the crawl from.'
+                'Fetch and honor the crawled site\'s robots.txt: matching Disallow rules stop the crawler from following/checking further internal links under that path. Does not affect single-status checks of external links, and does not apply to the URL you explicitly start the crawl from. Like Google, a robots.txt answering a server error (5xx, 429 or no response) blocks every internal link.'
             )
             ->end();
     }

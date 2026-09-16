@@ -79,6 +79,19 @@ final class CheckLinksCommandTest extends TestCase
         $this->assertStringContainsString('The max_pages limit was reached', $tester->getDisplay());
     }
 
+    public function testExecuteWarnsWhenRobotsTxtBlockedTheCrawl(): void
+    {
+        $crawler = $this->createMock(CrawlerInterface::class);
+        $crawler->method('crawl')->willReturn(
+            new CrawlReport('https://example.com', [], 1, 0.42, blockedByRobotsTxt: true)
+        );
+
+        $tester = new CommandTester(new CheckLinksCommand($crawler, 'https://example.com'));
+        $tester->execute([]);
+
+        $this->assertStringContainsString('answers a server error', $tester->getDisplay());
+    }
+
     public function testExecuteFailsWhenBrokenLinksFound(): void
     {
         $crawler = $this->createMock(CrawlerInterface::class);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lbonnet\LinkCheckerBundle\Tests\Crawler;
 
 use Lbonnet\CrawlerToolkit\Http\ThrottleExemptionInterface;
+use Lbonnet\CrawlerToolkit\Robots\RobotsTxtChecker;
 use Lbonnet\CrawlerToolkit\Robots\RobotsTxtCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Checker\UrlCheckerInterface;
 use Lbonnet\LinkCheckerBundle\Crawler\SiteCrawler;
@@ -119,6 +120,45 @@ final class SiteCrawlerTest extends TestCase
 
         $this->assertFalse($crawler->crawl($startUrl, maxPages: 0)->truncated);
         $this->assertTrue($crawler->crawl($startUrl)->truncated);
+    }
+
+    public function testCrawlReadsNoInternalPageWhenRobotsTxtAnswersAServerError(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->expects($this->once())->method('extract')->willReturn([
+            new ExtractedLink('https://example.com/page-1', $startUrl, 'Page 1', false),
+            new ExtractedLink('https://other.com/', $startUrl, 'Other', true),
+        ]);
+
+        $checkedUrls = [];
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturnCallback(static function (string $url) use (&$checkedUrls) {
+            $checkedUrls[] = $url;
+
+            return new CheckResult($url, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8');
+        });
+
+        $httpClient = new MockHttpClient(static function (string $method, string $url): MockResponse {
+            if (str_ends_with($url, '/robots.txt')) {
+                return new MockResponse('', ['http_code' => Response::HTTP_SERVICE_UNAVAILABLE]);
+            }
+
+            return new MockResponse('<html><body>...</body></html>');
+        });
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: $httpClient,
+            robotsTxtChecker: new RobotsTxtChecker($httpClient, 'TestBot/1.0'),
+        );
+
+        $report = $crawler->crawl($startUrl);
+
+        $this->assertSame([$startUrl, 'https://other.com/'], $checkedUrls);
+        $this->assertTrue($report->blockedByRobotsTxt);
     }
 
     public function testCrawlDispatchesEvent(): void

@@ -192,6 +192,7 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
     "totalChecked": 42,
     "totalDuration": 3.12,
     "truncated": false,
+    "blockedByRobotsTxt": false,
     "brokenLinksCount": 1,
     "likelyBlockedCount": 0,
     "brokenLinks": [
@@ -261,7 +262,9 @@ settings help keep that well-behaved:
   explicitly pass as the crawl's starting point, and it doesn't apply to external links, which only ever get a single
   status check rather than being recursively crawled. If that same `robots.txt` publishes a `Crawl-delay` for our user
   agent, it overrides `request_delay_ms` for the audited host specifically — the site owner's explicit request takes
-  precedence over the "unthrottled against itself" default.
+  precedence over the "unthrottled against itself" default. And like Google, if that `robots.txt` answers a server
+  error (5xx, 429, or no response at all), the crawler treats the whole site as off-limits: it checks the starting
+  URL and its links, but reads no further internal page, and the report is flagged `blockedByRobotsTxt`.
 
 ### Query strings and crawl size
 

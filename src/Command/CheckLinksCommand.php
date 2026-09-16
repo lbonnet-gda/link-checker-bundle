@@ -146,6 +146,14 @@ final class CheckLinksCommand extends Command
                 $io->newLine();
             }
 
+            if ($report->blockedByRobotsTxt) {
+                $io->warning(
+                    'The site\'s robots.txt answers a server error (5xx, 429 or no response at all): like Google, '
+                    .'the crawl only checked the links of the start page. Set "link_checker.respect_robots_txt" to '
+                    .'false to check the whole site anyway.'
+                );
+            }
+
             if ($report->truncated) {
                 $io->warning(
                     'The max_pages limit was reached: the links found so far were all checked, but the rest of the '
