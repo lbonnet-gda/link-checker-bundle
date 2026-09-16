@@ -47,6 +47,12 @@ final class CheckLinksCommand extends Command
                 'Override the maximum crawl depth'
             )
             ->addOption(
+                'max-pages',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Override the maximum number of internal pages read for links (0 = no limit)'
+            )
+            ->addOption(
                 'no-external',
                 null,
                 InputOption::VALUE_NONE,
@@ -83,6 +89,10 @@ final class CheckLinksCommand extends Command
             /** @var string|null $maxDepthOption */
             $maxDepthOption = $input->getOption('max-depth');
             $maxDepth = $maxDepthOption !== null ? (int)$maxDepthOption : null;
+
+            /** @var string|null $maxPagesOption */
+            $maxPagesOption = $input->getOption('max-pages');
+            $maxPages = $maxPagesOption !== null ? (int)$maxPagesOption : null;
 
             $checkExternal = $input->getOption('no-external') ? false : null;
 
@@ -126,6 +136,7 @@ final class CheckLinksCommand extends Command
                 checkExternal: $checkExternal,
                 excludePatterns: $excludePatterns,
                 progressCallback: $progressCallback,
+                maxPages: $maxPages,
             );
 
             if ($progressBar !== null) {
@@ -133,6 +144,13 @@ final class CheckLinksCommand extends Command
                 $io->newLine(2);
             } else {
                 $io->newLine();
+            }
+
+            if ($report->truncated) {
+                $io->warning(
+                    'The max_pages limit was reached: the links found so far were all checked, but the rest of the '
+                    .'site was not crawled. Raise it with --max-pages or "link_checker.max_pages".'
+                );
             }
 
             if (!$report->hasBrokenLinks()) {

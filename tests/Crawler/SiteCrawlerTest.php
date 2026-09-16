@@ -61,6 +61,66 @@ final class SiteCrawlerTest extends TestCase
         $this->assertSame(Response::HTTP_NOT_FOUND, $report->brokenLinks[0]['result']->statusCode);
     }
 
+    public function testCrawlStopsReadingPagesAtTheMaxPagesLimitButChecksTheLinksAlreadyFound(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->expects($this->once())->method('extract')->willReturn([
+            new ExtractedLink('https://example.com/page-1', $startUrl, 'Page 1', false),
+            new ExtractedLink('https://example.com/page-2', $startUrl, 'Page 2', false),
+        ]);
+
+        $checkedUrls = [];
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturnCallback(static function (string $url) use (&$checkedUrls) {
+            $checkedUrls[] = $url;
+
+            return new CheckResult($url, Response::HTTP_OK, 0.05, contentType: 'text/html; charset=UTF-8');
+        });
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: new MockHttpClient(new MockResponse('<html><body>...</body></html>')),
+        );
+
+        $report = $crawler->crawl($startUrl, maxPages: 1);
+
+        $this->assertSame([$startUrl, 'https://example.com/page-1', 'https://example.com/page-2'], $checkedUrls);
+        $this->assertSame(3, $report->totalChecked);
+        $this->assertTrue($report->truncated);
+    }
+
+    public function testCrawlIsNotTruncatedWithoutAPageLimit(): void
+    {
+        $startUrl = 'https://example.com';
+
+        $extractor = $this->createMock(LinkExtractorInterface::class);
+        $extractor->method('extract')->willReturnCallback(
+            static fn(string $html, string $url): array => $url === $startUrl
+                ? [new ExtractedLink('https://example.com/page-1', $startUrl, 'Page 1', false)]
+                : [],
+        );
+
+        $urlChecker = $this->createMock(UrlCheckerInterface::class);
+        $urlChecker->method('check')->willReturnCallback(
+            static fn(string $url) => new CheckResult($url, Response::HTTP_OK, 0.05, contentType: 'text/html'),
+        );
+
+        $crawler = new SiteCrawler(
+            extractor: $extractor,
+            urlChecker: $urlChecker,
+            httpClient: new MockHttpClient(
+                static fn(): MockResponse => new MockResponse('<html><body>...</body></html>'),
+            ),
+            defaultMaxPages: 1,
+        );
+
+        $this->assertFalse($crawler->crawl($startUrl, maxPages: 0)->truncated);
+        $this->assertTrue($crawler->crawl($startUrl)->truncated);
+    }
+
     public function testCrawlDispatchesEvent(): void
     {
         $startUrl = 'https://example.com';

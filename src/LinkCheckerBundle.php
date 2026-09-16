@@ -36,6 +36,14 @@ final class LinkCheckerBundle extends AbstractBundle
             ->info('Maximum crawl depth from the starting URL.')
             ->end();
 
+        $children->integerNode('max_pages')
+            ->defaultValue(500)
+            ->min(0)
+            ->info(
+                'Maximum number of internal pages read for links per crawl. Past it, the links already found are still checked, but no further page is read and the report is marked as truncated. Set to 0 for no limit.'
+            )
+            ->end();
+
         $children->integerNode('timeout')
             ->defaultValue(10)
             ->min(1)
@@ -98,6 +106,7 @@ final class LinkCheckerBundle extends AbstractBundle
      * @param array{
      *     base_url: string|null,
      *     max_depth: int,
+     *     max_pages: int,
      *     timeout: int,
      *     user_agent: string,
      *     check_external: bool,
@@ -116,6 +125,7 @@ final class LinkCheckerBundle extends AbstractBundle
         $container->parameters()
             ->set('link_checker.base_url', $config['base_url'])
             ->set('link_checker.max_depth', $config['max_depth'])
+            ->set('link_checker.max_pages', $config['max_pages'])
             ->set('link_checker.timeout', $config['timeout'])
             ->set('link_checker.user_agent', $config['user_agent'])
             ->set('link_checker.check_external', $config['check_external'])

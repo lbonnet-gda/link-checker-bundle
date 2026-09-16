@@ -31,7 +31,7 @@ final class CheckLinksMessageHandlerTest extends TestCase
         $crawler = $this->createMock(CrawlerInterface::class);
         $crawler->expects($this->once())
             ->method('crawl')
-            ->with('https://example.com/blog', 2, false, ['#/admin#'])
+            ->with('https://example.com/blog', 2, false, ['#/admin#'], null, 50)
             ->willReturn(new CrawlReport(startUrl: 'https://example.com/blog'));
 
         $handler = new CheckLinksMessageHandler(crawler: $crawler, defaultBaseUrl: 'https://default.example.com');
@@ -42,6 +42,7 @@ final class CheckLinksMessageHandlerTest extends TestCase
                 maxDepth: 2,
                 checkExternal: false,
                 excludePatterns: ['#/admin#'],
+                maxPages: 50,
             )
         );
     }

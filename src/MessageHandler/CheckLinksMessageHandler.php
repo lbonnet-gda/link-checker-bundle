@@ -37,6 +37,7 @@ final class CheckLinksMessageHandler
             maxDepth: $message->maxDepth,
             checkExternal: $message->checkExternal,
             excludePatterns: $message->excludePatterns,
+            maxPages: $message->maxPages,
         );
     }
 }

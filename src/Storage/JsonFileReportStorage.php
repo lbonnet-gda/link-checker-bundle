@@ -42,6 +42,7 @@ final class JsonFileReportStorage implements ReportStorageInterface
             'createdAt' => date(DateTimeInterface::ATOM),
             'totalChecked' => $report->totalChecked,
             'totalDuration' => $report->totalDuration,
+            'truncated' => $report->truncated,
             'brokenLinksCount' => $report->getBrokenLinksCount(),
             'likelyBlockedCount' => count(
                 array_filter(

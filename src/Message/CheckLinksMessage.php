@@ -14,6 +14,7 @@ final class CheckLinksMessage
         public readonly ?int $maxDepth = null,
         public readonly ?bool $checkExternal = null,
         public readonly array $excludePatterns = [],
+        public readonly ?int $maxPages = null,
     ) {
     }
 }

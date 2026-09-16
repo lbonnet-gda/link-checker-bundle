@@ -38,6 +38,7 @@ Create `config/packages/link_checker.yaml`:
 link_checker:
     base_url: 'https://example.com' # Default base URL to crawl
     max_depth: 3 # Maximum crawl depth (0 = start page only)
+    max_pages: 500 # Internal pages read for links per crawl; links already found are still checked (0 = no limit)
     timeout: 10 # Per-request HTTP timeout in seconds
     user_agent: 'Mozilla/5.0 (compatible; LinkCheckerBundle/1.0; +https://github.com/lbonnet-gda/link-checker-bundle)' # Sent as the User-Agent header; identify your crawler honestly, don't spoof a browser UA
     check_external: true # Check status of outbound links
@@ -68,6 +69,9 @@ php bin/console link-checker:check https://example.com
 # With custom depth and without checking external links
 php bin/console link-checker:check https://example.com --max-depth=2 --no-external
 
+# Reading at most 100 pages (0 = no limit)
+php bin/console link-checker:check https://example.com --max-pages=100
+
 # With extra exclude patterns
 php bin/console link-checker:check --exclude="#/preview#" --exclude="#/staging#"
 ```
@@ -96,6 +100,7 @@ public function triggerAudit(MessageBusInterface $bus): void
         startUrl: 'https://example.com/blog',
         maxDepth: 2,
         checkExternal: false,
+        maxPages: 100,
     ));
 }
 ```
@@ -186,6 +191,7 @@ By default, every completed crawl automatically saves a detailed JSON snapshot i
     "createdAt": "2026-08-14T14:15:00+02:00",
     "totalChecked": 42,
     "totalDuration": 3.12,
+    "truncated": false,
     "brokenLinksCount": 1,
     "likelyBlockedCount": 0,
     "brokenLinks": [

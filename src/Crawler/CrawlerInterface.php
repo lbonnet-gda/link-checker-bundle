@@ -16,6 +16,7 @@ interface CrawlerInterface
      * @param bool|null $checkExternal Check external links (null = bundle default value)
      * @param list<string> $excludePatterns Additional exclusion regex patterns
      * @param (callable(string $currentUrl, int $totalChecked, bool $isBroken): void)|null $progressCallback
+     * @param int|null $maxPages Max internal pages read for links, 0 = no limit (null = bundle default value)
      */
     public function crawl(
         string $startUrl,
@@ -23,5 +24,6 @@ interface CrawlerInterface
         ?bool $checkExternal = null,
         array $excludePatterns = [],
         ?callable $progressCallback = null,
+        ?int $maxPages = null,
     ): CrawlReport;
 }

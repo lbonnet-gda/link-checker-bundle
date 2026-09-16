@@ -38,6 +38,7 @@ final class LinkCheckerBundleTest extends TestCase
 
         $this->assertNull($container->getParameter('link_checker.base_url'));
         $this->assertSame(3, $container->getParameter('link_checker.max_depth'));
+        $this->assertSame(500, $container->getParameter('link_checker.max_pages'));
         $this->assertSame(10, $container->getParameter('link_checker.timeout'));
         $this->assertSame(UrlChecker::DEFAULT_USER_AGENT, $container->getParameter('link_checker.user_agent'));
         $this->assertTrue($container->getParameter('link_checker.check_external'));
@@ -104,6 +105,7 @@ final class LinkCheckerBundleTest extends TestCase
             'link_checker' => [
                 'base_url' => 'https://example.com',
                 'max_depth' => 5,
+                'max_pages' => 0,
                 'timeout' => 20,
                 'user_agent' => 'CustomBot/2.0',
                 'check_external' => false,
@@ -121,6 +123,7 @@ final class LinkCheckerBundleTest extends TestCase
 
         $this->assertSame('https://example.com', $container->getParameter('link_checker.base_url'));
         $this->assertSame(5, $container->getParameter('link_checker.max_depth'));
+        $this->assertSame(0, $container->getParameter('link_checker.max_pages'));
         $this->assertSame(20, $container->getParameter('link_checker.timeout'));
         $this->assertSame('CustomBot/2.0', $container->getParameter('link_checker.user_agent'));
         $this->assertFalse($container->getParameter('link_checker.check_external'));

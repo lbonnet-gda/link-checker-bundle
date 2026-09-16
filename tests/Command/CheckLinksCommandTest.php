@@ -58,6 +58,27 @@ final class CheckLinksCommandTest extends TestCase
         $this->assertStringContainsString('All clear!', $tester->getDisplay());
     }
 
+    public function testExecutePassesMaxPagesAndWarnsAboutATruncatedReport(): void
+    {
+        $crawler = $this->createMock(CrawlerInterface::class);
+        $crawler->expects($this->once())
+            ->method('crawl')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                25,
+            )
+            ->willReturn(new CrawlReport('https://example.com', [], 5, 0.42, truncated: true));
+
+        $tester = new CommandTester(new CheckLinksCommand($crawler, 'https://example.com'));
+
+        $this->assertSame(Command::SUCCESS, $tester->execute(['--max-pages' => '25']));
+        $this->assertStringContainsString('The max_pages limit was reached', $tester->getDisplay());
+    }
+
     public function testExecuteFailsWhenBrokenLinksFound(): void
     {
         $crawler = $this->createMock(CrawlerInterface::class);

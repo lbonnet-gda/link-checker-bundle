@@ -42,6 +42,7 @@ final class SiteCrawler implements CrawlerInterface
         /** @var list<string> */
         private readonly array $defaultExcludePatterns = [],
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly int $defaultMaxPages = 500,
     ) {
     }
 
@@ -51,15 +52,19 @@ final class SiteCrawler implements CrawlerInterface
         ?bool $checkExternal = null,
         array $excludePatterns = [],
         ?callable $progressCallback = null,
+        ?int $maxPages = null,
     ): CrawlReport {
         $startTime = microtime(true);
         $maxDepth = $maxDepth ?? $this->defaultMaxDepth;
+        $maxPages = $maxPages ?? $this->defaultMaxPages;
         $checkExternal = $checkExternal ?? $this->defaultCheckExternal;
         $activeExcludePatterns = array_merge($this->defaultExcludePatterns, $excludePatterns);
 
         $visited = [];
         $brokenLinks = [];
         $totalChecked = 0;
+        $pagesRead = 0;
+        $truncated = false;
 
         /** @var list<array{link: ExtractedLink, depth: int}> $queue */
         $queue = [
@@ -116,6 +121,14 @@ final class SiteCrawler implements CrawlerInterface
                     continue;
                 }
 
+                if ($maxPages > 0 && $pagesRead >= $maxPages) {
+                    $truncated = true;
+
+                    continue;
+                }
+
+                $pagesRead++;
+
                 try {
                     $response = $this->httpClient->request(Request::METHOD_GET, $link->url);
                     $html = BoundedContentReader::read($this->httpClient, $response, self::MAX_HTML_LENGTH);
@@ -159,7 +172,8 @@ final class SiteCrawler implements CrawlerInterface
             startUrl: $startUrl,
             brokenLinks: $brokenLinks,
             totalChecked: $totalChecked,
-            totalDuration: round($totalDuration, 3)
+            totalDuration: round($totalDuration, 3),
+            truncated: $truncated,
         );
 
         try {
