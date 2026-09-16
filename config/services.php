@@ -36,6 +36,7 @@ return static function (ContainerConfigurator $container): void {
     $services->set(SiteCrawler::class)
         ->arg('$httpClient', service('link_checker.http_client'))
         ->arg('$defaultMaxDepth', param('link_checker.max_depth'))
+        ->arg('$defaultMaxPages', param('link_checker.max_pages'))
         ->arg('$defaultCheckExternal', param('link_checker.check_external'))
         ->arg('$defaultExcludePatterns', param('link_checker.exclude_patterns'));
 
