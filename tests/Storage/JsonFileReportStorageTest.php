@@ -103,6 +103,7 @@ final class JsonFileReportStorageTest extends TestCase
         $this->assertSame([], $decoded['brokenLinks']);
         $this->assertSame(10, $decoded['totalChecked']);
         $this->assertFalse($decoded['truncated']);
+        $this->assertFalse($decoded['blockedByRobotsTxt']);
     }
 
     public function testSaveSerializesNonHttpFailureFields(): void

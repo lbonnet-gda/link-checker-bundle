@@ -12,6 +12,7 @@ final class CrawlReport
      * @param int $totalChecked
      * @param float $totalDuration
      * @param bool $truncated the max_pages limit was reached: some internal pages were checked but not read for links
+     * @param bool $blockedByRobotsTxt the site's robots.txt answers a server error, so no internal link was followed
      */
     public function __construct(
         public readonly string $startUrl,
@@ -19,6 +20,7 @@ final class CrawlReport
         public readonly int $totalChecked = 0,
         public readonly float $totalDuration = 0.0,
         public readonly bool $truncated = false,
+        public readonly bool $blockedByRobotsTxt = false,
     ) {
     }
 
